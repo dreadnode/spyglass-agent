@@ -7,3 +7,8 @@
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-pro';
 export const DEFAULT_GEMINI_FLASH_MODEL = 'gemini-2.5-flash';
 export const DEFAULT_GEMINI_EMBEDDING_MODEL = 'gemini-embedding-001';
+
+// Ollama model defaults
+export const DEFAULT_OLLAMA_MODEL = 'llama3.1';
+export const DEFAULT_OLLAMA_CODE_MODEL = 'codellama';
+export const DEFAULT_OLLAMA_EMBEDDING_MODEL = 'nomic-embed-text';

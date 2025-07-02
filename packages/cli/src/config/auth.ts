@@ -36,5 +36,12 @@ export const validateAuthMethod = (authMethod: string): string | null => {
     return null;
   }
 
+  if (authMethod === AuthType.USE_OLLAMA) {
+    // Ollama doesn't need API keys, just needs to be running
+    // We could add a health check here, but for now just allow it
+    console.log('Using Ollama backend - no API key validation required');
+    return null;
+  }
+
   return 'Invalid auth method selected.';
 };

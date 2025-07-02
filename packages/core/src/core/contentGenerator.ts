@@ -14,7 +14,8 @@ import {
   GoogleGenAI,
 } from '@google/genai';
 import { createCodeAssistContentGenerator } from '../code_assist/codeAssist.js';
-import { DEFAULT_GEMINI_MODEL } from '../config/models.js';
+import { createOllamaContentGenerator } from '../ollama/ollamaContentGenerator.js';
+import { DEFAULT_GEMINI_MODEL, DEFAULT_OLLAMA_MODEL } from '../config/models.js';
 import { getEffectiveModel } from './modelCheck.js';
 
 /**
@@ -38,6 +39,7 @@ export enum AuthType {
   LOGIN_WITH_GOOGLE = 'oauth-personal',
   USE_GEMINI = 'gemini-api-key',
   USE_VERTEX_AI = 'vertex-ai',
+  USE_OLLAMA = 'ollama',
 }
 
 export type ContentGeneratorConfig = {
@@ -45,6 +47,7 @@ export type ContentGeneratorConfig = {
   apiKey?: string;
   vertexai?: boolean;
   authType?: AuthType | undefined;
+  ollamaUrl?: string;
 };
 
 export async function createContentGeneratorConfig(
@@ -56,6 +59,7 @@ export async function createContentGeneratorConfig(
   const googleApiKey = process.env.GOOGLE_API_KEY;
   const googleCloudProject = process.env.GOOGLE_CLOUD_PROJECT;
   const googleCloudLocation = process.env.GOOGLE_CLOUD_LOCATION;
+  const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
 
   // Use runtime model from config if available, otherwise fallback to parameter or default
   const effectiveModel = config?.getModel?.() || model || DEFAULT_GEMINI_MODEL;
@@ -96,6 +100,15 @@ export async function createContentGeneratorConfig(
     return contentGeneratorConfig;
   }
 
+  if (authType === AuthType.USE_OLLAMA) {
+    contentGeneratorConfig.ollamaUrl = ollamaUrl;
+    // Default to llama3.1 if no model specified for Ollama
+    if (effectiveModel === DEFAULT_GEMINI_MODEL) {
+      contentGeneratorConfig.model = DEFAULT_OLLAMA_MODEL;
+    }
+    return contentGeneratorConfig;
+  }
+
   return contentGeneratorConfig;
 }
 
@@ -128,6 +141,10 @@ export async function createContentGenerator(
     });
 
     return googleGenAI.models;
+  }
+
+  if (config.authType === AuthType.USE_OLLAMA) {
+    return createOllamaContentGenerator(config);
   }
 
   throw new Error(

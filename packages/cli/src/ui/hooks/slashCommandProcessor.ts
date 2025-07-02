@@ -32,7 +32,9 @@ import { createShowMemoryAction } from './useShowMemoryCommand.js';
 import { GIT_COMMIT_INFO } from '../../generated/git-commit.js';
 import { formatDuration, formatMemoryUsage } from '../utils/formatters.js';
 import { getCliVersion } from '../../utils/version.js';
-import { LoadedSettings } from '../../config/settings.js';
+import { LoadedSettings, SettingScope } from '../../config/settings.js';
+import { getModelBackendDisplayName, getModelBackendInstructions } from '../../config/modelBackend.js';
+import { AuthType } from '@dreadnode/spyglass-agent-core';
 
 export interface SlashCommandActionReturn {
   shouldScheduleTool?: boolean;
@@ -910,6 +912,104 @@ export const useSlashCommandProcessor = (
             });
           }
           setPendingCompressionItem(null);
+        },
+      },
+      {
+        name: 'backend',
+        altName: 'model',
+        description: 'Switch model backend (ollama, gemini, vertex, oauth) or show current backend',
+        completion: async () => {
+          return ['ollama', 'gemini', 'vertex', 'oauth', 'status'];
+        },
+        action: async (_mainCommand, subCommand, _args) => {
+          const currentAuthType = settings.merged.selectedAuthType;
+          
+          if (!subCommand || subCommand === 'status') {
+            // Show current backend status
+            const displayName = currentAuthType ? getModelBackendDisplayName(currentAuthType) : 'Not configured';
+            const model = config?.getModel() || 'Unknown';
+            
+            addMessage({
+              type: MessageType.INFO,
+              content: `**Current Backend:** ${displayName}\n**Model:** ${model}\n\nTo switch backends, use: \`/backend <ollama|gemini|vertex|oauth>\`\n\nFor setup instructions: \`/backend help\``,
+              timestamp: new Date(),
+            });
+            return;
+          }
+
+          if (subCommand === 'help') {
+            // Show setup instructions for all backends
+            let helpContent = '## Model Backend Setup Instructions\n\n';
+            
+            for (const authType of [AuthType.USE_OLLAMA, AuthType.USE_GEMINI, AuthType.USE_VERTEX_AI, AuthType.LOGIN_WITH_GOOGLE]) {
+              helpContent += `### ${getModelBackendDisplayName(authType)}\n`;
+              helpContent += getModelBackendInstructions(authType) + '\n\n';
+            }
+            
+            addMessage({
+              type: MessageType.INFO,
+              content: helpContent,
+              timestamp: new Date(),
+            });
+            return;
+          }
+
+          // Switch to a specific backend
+          let newAuthType: AuthType | undefined;
+          
+          switch (subCommand.toLowerCase()) {
+            case 'ollama':
+            case 'local':
+              newAuthType = AuthType.USE_OLLAMA;
+              break;
+            case 'gemini':
+            case 'google':
+              newAuthType = AuthType.USE_GEMINI;
+              break;
+            case 'vertex':
+            case 'vertexai':
+              newAuthType = AuthType.USE_VERTEX_AI;
+              break;
+            case 'oauth':
+            case 'google-oauth':
+              newAuthType = AuthType.LOGIN_WITH_GOOGLE;
+              break;
+            default:
+              addMessage({
+                type: MessageType.ERROR,
+                content: `Invalid backend: ${subCommand}\n\nAvailable backends: ollama, gemini, vertex, oauth\n\nUse \`/backend help\` for setup instructions.`,
+                timestamp: new Date(),
+              });
+              return;
+          }
+
+          // Update the setting
+          settings.setValue(SettingScope.User, 'selectedAuthType', newAuthType);
+          
+          addMessage({
+            type: MessageType.INFO,
+            content: `✅ **Backend switched to:** ${getModelBackendDisplayName(newAuthType)}\n\n⚠️ **Note:** You may need to restart the CLI for the change to take full effect.\n\nIf you encounter issues, check the setup instructions with \`/backend help\`.`,
+            timestamp: new Date(),
+          });
+
+          // Trigger auth dialog to re-authenticate with new backend
+          if (config) {
+            try {
+              await config.refreshAuth(newAuthType);
+              addMessage({
+                type: MessageType.INFO,
+                content: `🔄 **Authentication refreshed** for ${getModelBackendDisplayName(newAuthType)}`,
+                timestamp: new Date(),
+              });
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              addMessage({
+                type: MessageType.ERROR,
+                content: `❌ **Authentication failed:** ${errorMessage}\n\nPlease check your configuration and try again.\n\nUse \`/backend help\` for setup instructions.`,
+                timestamp: new Date(),
+              });
+            }
+          }
         },
       },
     ];

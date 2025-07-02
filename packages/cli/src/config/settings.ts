@@ -17,6 +17,7 @@ import {
 import stripJsonComments from 'strip-json-comments';
 import { DefaultLight } from '../ui/themes/default-light.js';
 import { DefaultDark } from '../ui/themes/default.js';
+import { getDefaultAuthTypeFromEnv } from './modelBackend.js';
 
 export const SETTINGS_DIRECTORY_NAME = '.gemini';
 export const USER_SETTINGS_DIR = path.join(homedir(), SETTINGS_DIRECTORY_NAME);
@@ -100,10 +101,17 @@ export class LoadedSettings {
   }
 
   private computeMergedSettings(): Settings {
-    return {
+    const merged = {
       ...this.user.settings,
       ...this.workspace.settings,
     };
+    
+    // Auto-detect auth type if not explicitly set
+    if (!merged.selectedAuthType) {
+      merged.selectedAuthType = getDefaultAuthTypeFromEnv();
+    }
+    
+    return merged;
   }
 
   forScope(scope: SettingScope): SettingsFile {

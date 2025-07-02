@@ -50,6 +50,57 @@ The framework supports MCP (Model Context Protocol) servers for specialized red 
 ## Development Status
 This is an early adaptation focused on rebranding and red teaming specialization. The core CLI framework is stable, but red teaming-specific features are under development.
 
+## Local Model Support
+
+### Multi-Backend Architecture
+Spyglass Agent now supports multiple AI model backends for enhanced flexibility and security:
+
+- **Ollama (Local)** - For air-gapped environments and data privacy
+- **Google Gemini API** - Cloud-based with high performance  
+- **Google Vertex AI** - Enterprise Google Cloud integration
+- **Google OAuth** - Interactive authentication
+
+### Backend Switching
+Users can easily switch between backends using:
+
+**Environment Variable:**
+```bash
+export SPYGLASS_MODEL_BACKEND=ollama  # or gemini, vertex, oauth
+```
+
+**CLI Command:**
+```bash
+/backend ollama      # Switch to Ollama
+/backend gemini      # Switch to Gemini API  
+/backend status      # Show current backend
+/backend help        # Setup instructions
+```
+
+### Ollama Setup (Recommended for Red Teams)
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Start Ollama service
+ollama serve
+
+# Pull a model
+ollama pull llama3.1       # General purpose
+ollama pull codellama      # Code-focused
+ollama pull mistral        # Alternative option
+
+# Use with Spyglass
+export SPYGLASS_MODEL_BACKEND=ollama
+spyglass
+```
+
+**Benefits for Red Teams:**
+- ✅ **Air-gapped** - No internet required after setup
+- ✅ **Data privacy** - All processing happens locally
+- ✅ **No API costs** - Free unlimited usage
+- ✅ **Custom models** - Can fine-tune for specific domains
+- ✅ **OPSEC friendly** - No data sent to cloud providers
+
 ## Development Notes
 - **System Prompt Updates**: When adding new tools or MCP integrations, update the system prompt in `packages/core/src/core/prompts.ts` to include references to new tool names using `${ToolName.Name}` template variables
 - **Tool Registry**: New tools should be registered in the tool registry and imported in prompts.ts for proper system prompt integration
