@@ -1,8 +1,8 @@
 {
-  "name": "@google/gemini-cli-core",
-  "version": "0.1.9",
-  "description": "Gemini CLI Server",
-  "repository": "google-gemini/gemini-cli",
+  "name": "@dreadnode/spyglass-agent-core",
+  "version": "0.1.0",
+  "description": "Spyglass Agent Core - Red Team Framework",
+  "repository": "dreadnode/spyglass-agent",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

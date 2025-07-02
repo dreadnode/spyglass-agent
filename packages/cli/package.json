@@ -1,12 +1,12 @@
 {
-  "name": "@google/gemini-cli",
-  "version": "0.1.9",
-  "description": "Gemini CLI",
-  "repository": "google-gemini/gemini-cli",
+  "name": "@dreadnode/spyglass-agent",
+  "version": "0.1.0",
+  "description": "Spyglass Agent - Red Team CLI Tool",
+  "repository": "dreadnode/spyglass-agent",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "gemini": "dist/index.js"
+    "spyglass": "dist/index.js"
   },
   "scripts": {
     "build": "node ../../scripts/build_package.js",
@@ -26,10 +26,10 @@
     "dist"
   ],
   "config": {
-    "sandboxImageUri": "gemini-cli-sandbox"
+    "sandboxImageUri": "spyglass-agent-sandbox"
   },
   "dependencies": {
-    "@google/gemini-cli-core": "*",
+    "@dreadnode/spyglass-agent-core": "*",
     "@types/update-notifier": "^6.0.8",
     "command-exists": "^1.2.9",
     "diff": "^7.0.0",
