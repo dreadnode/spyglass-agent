@@ -79,7 +79,7 @@ if (!argv.s) {
 
 console.log('packing @dreadnode/spyglass-agent-cli ...');
 const cliPackageDir = join('packages', 'cli');
-rmSync(join(cliPackageDir, 'dist', 'google-gemini-cli-*.tgz'), { force: true });
+rmSync(join(cliPackageDir, 'dist', 'dreadnode-spyglass-agent-*.tgz'), { force: true });
 execSync(
   `npm pack -w @dreadnode/spyglass-agent-cli --pack-destination ./packages/cli/dist`,
   {
@@ -89,7 +89,7 @@ execSync(
 
 console.log('packing @dreadnode/spyglass-agent-core ...');
 const corePackageDir = join('packages', 'core');
-rmSync(join(corePackageDir, 'dist', 'google-gemini-cli-core-*.tgz'), {
+rmSync(join(corePackageDir, 'dist', 'dreadnode-spyglass-agent-core-*.tgz'), {
   force: true,
 });
 execSync(
@@ -102,11 +102,11 @@ const packageVersion = JSON.parse(
 ).version;
 
 chmodSync(
-  join(cliPackageDir, 'dist', `google-gemini-cli-${packageVersion}.tgz`),
+  join(cliPackageDir, 'dist', `dreadnode-spyglass-agent-${packageVersion}.tgz`),
   0o755,
 );
 chmodSync(
-  join(corePackageDir, 'dist', `google-gemini-cli-core-${packageVersion}.tgz`),
+  join(corePackageDir, 'dist', `dreadnode-spyglass-agent-core-${packageVersion}.tgz`),
   0o755,
 );
 

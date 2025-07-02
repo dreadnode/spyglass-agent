@@ -9,7 +9,7 @@ import os from 'os';
 import { join as pathJoin } from 'node:path';
 import { getErrorMessage } from '@dreadnode/spyglass-agent-core';
 
-const warningsFilePath = pathJoin(os.tmpdir(), 'gemini-cli-warnings.txt');
+const warningsFilePath = pathJoin(os.tmpdir(), 'spyglass-agent-warnings.txt');
 
 export async function getStartupWarnings(): Promise<string[]> {
   try {

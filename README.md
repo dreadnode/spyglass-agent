@@ -1,6 +1,6 @@
 # Spyglass Agent - Red Team CLI Tool
 
-[![Spyglass Agent CI](https://github.com/google-gemini/gemini-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/google-gemini/gemini-cli/actions/workflows/ci.yml)
+[![Spyglass Agent CI](https://github.com/dreadnode/spyglass-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/dreadnode/spyglass-agent/actions/workflows/ci.yml)
 
 ![Spyglass Agent Screenshot](./docs/assets/spyglass-screenshot.png)
 
