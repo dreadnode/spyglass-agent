@@ -12,8 +12,8 @@ import { Text } from 'ink';
 import { StreamingContext } from '../../contexts/StreamingContext.js';
 
 // Mock child components or utilities if they are complex or have side effects
-vi.mock('../GeminiRespondingSpinner.js', () => ({
-  GeminiRespondingSpinner: ({
+vi.mock('../AIRespondingSpinner.js', () => ({
+  AIRespondingSpinner: ({
     nonRespondingDisplay,
   }: {
     nonRespondingDisplay?: string;

@@ -21,7 +21,7 @@ export const GeminiPrivacyNotice = ({ onExit }: GeminiPrivacyNoticeProps) => {
   return (
     <Box flexDirection="column" marginBottom={1}>
       <Text bold color={Colors.AccentPurple}>
-        Gemini API Key Notice
+        Spyglass Agent - Gemini API Key Notice
       </Text>
       <Newline />
       <Text>

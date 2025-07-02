@@ -6,7 +6,7 @@
 
 import stripAnsi from 'strip-ansi';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { main } from './gemini.js';
+import { main } from './spyglass.js';
 import {
   LoadedSettings,
   SettingsFile,

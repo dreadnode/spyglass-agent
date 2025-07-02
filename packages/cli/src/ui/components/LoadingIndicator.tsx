@@ -10,7 +10,7 @@ import { Box, Text } from 'ink';
 import { Colors } from '../colors.js';
 import { useStreamingContext } from '../contexts/StreamingContext.js';
 import { StreamingState } from '../types.js';
-import { GeminiRespondingSpinner } from './GeminiRespondingSpinner.js';
+import { AIRespondingSpinner } from './AIRespondingSpinner.js';
 
 interface LoadingIndicatorProps {
   currentLoadingPhrase?: string;
@@ -38,7 +38,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
       {/* Main loading line */}
       <Box>
         <Box marginRight={1}>
-          <GeminiRespondingSpinner
+          <AIRespondingSpinner
             nonRespondingDisplay={
               streamingState === StreamingState.WaitingForConfirmation
                 ? '⠏'

@@ -14,6 +14,7 @@ export const validateAuthMethod = (authMethod: string): string | null => {
   }
 
   if (authMethod === AuthType.USE_GEMINI) {
+    // TODO: Support additional model backends beyond Gemini (e.g., OpenAI, Anthropic, etc.)
     if (!process.env.GEMINI_API_KEY) {
       return 'GEMINI_API_KEY environment variable not found. Add that to your .env and try again, no reload needed!';
     }

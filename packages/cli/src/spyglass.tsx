@@ -103,6 +103,7 @@ export async function main() {
   const config = await loadCliConfig(settings.merged, extensions, sessionId);
 
   // set default fallback to gemini api key
+  // TODO: Expand to support multiple model backends (OpenAI, Anthropic, etc.)
   // this has to go after load cli because thats where the env is set
   if (!settings.merged.selectedAuthType && process.env.GEMINI_API_KEY) {
     settings.setValue(
@@ -212,7 +213,7 @@ export async function main() {
 
 function setWindowTitle(title: string, settings: LoadedSettings) {
   if (!settings.merged.hideWindowTitle) {
-    process.stdout.write(`\x1b]2; Gemini - ${title} \x07`);
+    process.stdout.write(`\x1b]2; Spyglass Agent - ${title} \x07`);
 
     process.on('exit', () => {
       process.stdout.write(`\x1b]2;\x07`);

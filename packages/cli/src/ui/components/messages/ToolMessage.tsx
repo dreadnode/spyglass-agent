@@ -10,7 +10,7 @@ import { IndividualToolCallDisplay, ToolCallStatus } from '../../types.js';
 import { DiffRenderer } from './DiffRenderer.js';
 import { Colors } from '../../colors.js';
 import { MarkdownDisplay } from '../../utils/MarkdownDisplay.js';
-import { GeminiRespondingSpinner } from '../GeminiRespondingSpinner.js';
+import { AIRespondingSpinner } from '../AIRespondingSpinner.js';
 import { MaxSizedBox } from '../shared/MaxSizedBox.js';
 
 const STATIC_HEIGHT = 1;
@@ -121,7 +121,7 @@ const ToolStatusIndicator: React.FC<ToolStatusIndicatorProps> = ({
       <Text color={Colors.AccentGreen}>o</Text>
     )}
     {status === ToolCallStatus.Executing && (
-      <GeminiRespondingSpinner
+      <AIRespondingSpinner
         spinnerType="toggle"
         nonRespondingDisplay={'⊷'}
       />

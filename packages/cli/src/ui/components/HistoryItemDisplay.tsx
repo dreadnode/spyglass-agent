@@ -8,11 +8,11 @@ import React from 'react';
 import type { HistoryItem } from '../types.js';
 import { UserMessage } from './messages/UserMessage.js';
 import { UserShellMessage } from './messages/UserShellMessage.js';
-import { GeminiMessage } from './messages/GeminiMessage.js';
+import { AIMessage } from './messages/AIMessage.js';
 import { InfoMessage } from './messages/InfoMessage.js';
 import { ErrorMessage } from './messages/ErrorMessage.js';
 import { ToolGroupMessage } from './messages/ToolGroupMessage.js';
-import { GeminiMessageContent } from './messages/GeminiMessageContent.js';
+import { AIMessageContent } from './messages/AIMessageContent.js';
 import { CompressionMessage } from './messages/CompressionMessage.js';
 import { Box } from 'ink';
 import { AboutBox } from './AboutBox.js';
@@ -44,7 +44,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
     {item.type === 'user' && <UserMessage text={item.text} />}
     {item.type === 'user_shell' && <UserShellMessage text={item.text} />}
     {item.type === 'gemini' && (
-      <GeminiMessage
+      <AIMessage
         text={item.text}
         isPending={isPending}
         availableTerminalHeight={availableTerminalHeight}
@@ -52,7 +52,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
       />
     )}
     {item.type === 'gemini_content' && (
-      <GeminiMessageContent
+      <AIMessageContent
         text={item.text}
         isPending={isPending}
         availableTerminalHeight={availableTerminalHeight}

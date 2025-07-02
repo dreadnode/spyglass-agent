@@ -31,9 +31,9 @@ function getContainerPath(hostPath: string): string {
   return hostPath;
 }
 
-const LOCAL_DEV_SANDBOX_IMAGE_NAME = 'gemini-cli-sandbox';
-const SANDBOX_NETWORK_NAME = 'gemini-cli-sandbox';
-const SANDBOX_PROXY_NAME = 'gemini-cli-sandbox-proxy';
+const LOCAL_DEV_SANDBOX_IMAGE_NAME = 'spyglass-agent-sandbox';
+const SANDBOX_NETWORK_NAME = 'spyglass-agent-sandbox';
+const SANDBOX_PROXY_NAME = 'spyglass-agent-sandbox-proxy';
 const BUILTIN_SEATBELT_PROFILES = [
   'permissive-open',
   'permissive-closed',

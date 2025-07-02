@@ -9,14 +9,14 @@ import { Text, Box } from 'ink';
 import { MarkdownDisplay } from '../../utils/MarkdownDisplay.js';
 import { Colors } from '../../colors.js';
 
-interface GeminiMessageProps {
+interface AIMessageProps {
   text: string;
   isPending: boolean;
   availableTerminalHeight?: number;
   terminalWidth: number;
 }
 
-export const GeminiMessage: React.FC<GeminiMessageProps> = ({
+export const AIMessage: React.FC<AIMessageProps> = ({
   text,
   isPending,
   availableTerminalHeight,
