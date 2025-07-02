@@ -20,6 +20,7 @@ import { MemoryTool, SPYGLASS_CONFIG_DIR, GEMINI_CONFIG_DIR } from '../tools/mem
 import { WebSearchTool } from '../tools/web-search.js';
 import { WebFetchTool } from '../tools/web-fetch.js';
 import { NetworkReconTool } from '../tools/network-recon.js';
+import { ExternalReconTool } from '../tools/external-recon.js';
 
 export function getCoreSystemPrompt(userMemory?: string): string {
   // if GEMINI_SYSTEM_MD is set (and not 0|false), override system prompt from file
@@ -63,7 +64,7 @@ You are Spyglass Agent, an interactive CLI tool specializing in red team operati
 ## Security Assessment Tasks
 When requested to perform security assessments, vulnerability research, or penetration testing, follow this sequence:
 1. **Scope Validation:** Confirm authorization, scope boundaries, rules of engagement, and legal constraints. Verify target systems are authorized for testing. Use '${GrepTool.Name}' and '${GlobTool.Name}' to understand project structure and identify potential attack surfaces.
-2. **Reconnaissance:** Gather information about the target environment using available tools. Use '${ReadFileTool.Name}' and '${ReadManyFilesTool.Name}' to analyze configurations, dependencies, and code patterns. Use '${NetworkReconTool.Name}' for intelligent network scanning and service discovery. Execute '${ShellTool.Name}' commands for additional network discovery within authorized scope.
+2. **Reconnaissance:** Gather information about the target environment using available tools. Use '${ReadFileTool.Name}' and '${ReadManyFilesTool.Name}' to analyze configurations, dependencies, and code patterns. Use '${NetworkReconTool.Name}' for intelligent network scanning and service discovery. Use '${ExternalReconTool.Name}' for DNS enumeration, WHOIS lookups, and subdomain discovery. Execute '${ShellTool.Name}' commands for additional network discovery within authorized scope.
 3. **Vulnerability Discovery:** Systematically identify security weaknesses using analysis tools and manual review. Look for common vulnerability patterns (injection flaws, authentication bypasses, privilege escalation, etc.). Document findings with evidence using '${MemoryTool.Name}' for persistent tracking.
 4. **Proof of Concept:** Safely demonstrate identified vulnerabilities without causing damage. Create minimal PoC code or commands that prove exploitability while maintaining system integrity. Use '${WriteFileTool.Name}' to document exploitation steps.
 5. **Impact Assessment:** Evaluate the security impact, potential attack chains, and business risk of discovered vulnerabilities. Consider both technical and operational impacts.

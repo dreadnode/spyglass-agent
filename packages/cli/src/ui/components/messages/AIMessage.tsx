@@ -22,7 +22,7 @@ export const AIMessage: React.FC<AIMessageProps> = ({
   availableTerminalHeight,
   terminalWidth,
 }) => {
-  const prefix = '✦ ';
+  const prefix = '🔍 ';
   const prefixWidth = prefix.length;
 
   return (
