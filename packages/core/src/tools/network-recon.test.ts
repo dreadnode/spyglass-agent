@@ -39,7 +39,7 @@ describe('NetworkReconTool', () => {
   beforeEach(() => {
     // Reset all mocks
     mockExecAsync.mockReset();
-    tool = new NetworkReconTool();
+    tool = new NetworkReconTool('/test/target');
   });
 
   describe('constructor', () => {
@@ -353,7 +353,7 @@ describe('NetworkReconTool', () => {
     it('should return tool description', () => {
       const description = tool.description;
       expect(description).toContain('network reconnaissance');
-      expect(description).toContain('port scanning');
+      expect(description).toContain('Port scanning and service discovery');
       expect(description).toContain('service discovery');
     });
   });

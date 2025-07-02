@@ -21,17 +21,18 @@ import { WebSearchTool } from '../tools/web-search.js';
 import { WebFetchTool } from '../tools/web-fetch.js';
 import { NetworkReconTool } from '../tools/network-recon.js';
 import { ExternalReconTool } from '../tools/external-recon.js';
+import { SecurityReportTool } from '../tools/security-report.js';
 
 export function getCoreSystemPrompt(userMemory?: string): string {
-  // if GEMINI_SYSTEM_MD is set (and not 0|false), override system prompt from file
-  // default path is .gemini/system.md but can be modified via custom path in GEMINI_SYSTEM_MD
+  // if SPYGLASS_SYSTEM_MD is set (and not 0|false), override system prompt from file
+  // default path is .spyglass/system.md but can be modified via custom path in SPYGLASS_SYSTEM_MD
   let systemMdEnabled = false;
-  let systemMdPath = path.join(GEMINI_CONFIG_DIR, 'system.md');
-  const systemMdVar = process.env.GEMINI_SYSTEM_MD?.toLowerCase();
+  let systemMdPath = path.join(SPYGLASS_CONFIG_DIR, 'system.md');
+  const systemMdVar = process.env.SPYGLASS_SYSTEM_MD?.toLowerCase();
   if (systemMdVar && !['0', 'false'].includes(systemMdVar)) {
     systemMdEnabled = true; // enable system prompt override
     if (!['1', 'true'].includes(systemMdVar)) {
-      systemMdPath = systemMdVar; // use custom path from GEMINI_SYSTEM_MD
+      systemMdPath = systemMdVar; // use custom path from SPYGLASS_SYSTEM_MD
     }
     // require file to exist when override is enabled
     if (!fs.existsSync(systemMdPath)) {
@@ -219,9 +220,8 @@ Found potential security issues. Documenting findings with evidence.
 <example>
 user: Generate a penetration testing report for our findings
 model: I'll compile our security assessment findings into a comprehensive report.
-[tool_call: ${MemoryTool.Name} to retrieve tracked security findings]
-[tool_call: ${WriteFileTool.Name} to create structured security report with executive summary, technical findings, evidence, and remediation recommendations]
-Report generated with CVSS scoring and prioritized remediation steps.
+[tool_call: ${SecurityReportTool.Name} for {"title": "Penetration Test Report", "assessmentType": "full-assessment", "format": ["markdown", "json"], "aggregateFromMemory": true}]
+Professional security report generated with executive summary, risk ratings, and prioritized remediation guidance.
 </example>
 
 <example>
@@ -269,13 +269,13 @@ To help you check their settings, I can read their contents. Which one would you
 Your core function is efficient and safe security assistance. Balance extreme conciseness with the crucial need for clarity, especially regarding authorization, safety, and potential system impact. Always prioritize proper authorization, scope validation, and defensive purpose. Never make assumptions about authorization or target scope; instead verify explicitly with the user. Document all security findings with evidence and provide actionable remediation guidance. Finally, you are a security agent - systematically work through assessments until security objectives are completely achieved while maintaining ethical and legal boundaries.
 `.trim();
 
-  // if GEMINI_WRITE_SYSTEM_MD is set (and not 0|false), write base system prompt to file
-  const writeSystemMdVar = process.env.GEMINI_WRITE_SYSTEM_MD?.toLowerCase();
+  // if SPYGLASS_WRITE_SYSTEM_MD is set (and not 0|false), write base system prompt to file
+  const writeSystemMdVar = process.env.SPYGLASS_WRITE_SYSTEM_MD?.toLowerCase();
   if (writeSystemMdVar && !['0', 'false'].includes(writeSystemMdVar)) {
     if (['1', 'true'].includes(writeSystemMdVar)) {
-      fs.writeFileSync(systemMdPath, basePrompt); // write to default path, can be modified via GEMINI_SYSTEM_MD
+      fs.writeFileSync(systemMdPath, basePrompt); // write to default path, can be modified via SPYGLASS_SYSTEM_MD
     } else {
-      fs.writeFileSync(writeSystemMdVar, basePrompt); // write to custom path from GEMINI_WRITE_SYSTEM_MD
+      fs.writeFileSync(writeSystemMdVar, basePrompt); // write to custom path from SPYGLASS_WRITE_SYSTEM_MD
     }
   }
 

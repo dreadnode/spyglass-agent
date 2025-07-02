@@ -38,77 +38,146 @@ With Spyglass Agent you can:
 
 You are now ready to use Spyglass Agent for your authorized security testing!
 
-## AI Backend Options
+## AI Backend Configuration
 
-Spyglass Agent supports multiple AI backends to meet different security and operational requirements:
+Spyglass Agent supports multiple AI backends to meet different security and operational requirements. You can switch backends using environment variables or by saving preferences in your settings file.
 
-### Ollama (Local)
+### Quick Backend Selection
 
-Local model execution for air-gapped environments and data privacy:
+**Environment Variables (Recommended)**
+```bash
+# Use environment variables for temporary backend selection
+export SPYGLASS_MODEL_BACKEND=anthropic  # or openai, gemini, ollama
+export SPYGLASS_MODEL=claude-3-5-sonnet-20241022  # Optional: specific model
+spyglass
+```
 
-1. **Install Ollama:**
-   ```bash
-   curl -fsSL https://ollama.ai/install.sh | sh
-   ```
+**Settings File (Persistent)**
+```bash
+# Save backend preference permanently 
+spyglass --auth anthropic  # Interactive setup wizard
+```
 
-2. **Start Ollama service:**
-   ```bash
-   ollama serve
-   ```
+### Supported Backends
 
-3. **Pull a recommended model:**
-   ```bash
-   # Best for security work
-   ollama pull llama3.1        # General purpose (4.7GB)
-   ollama pull codellama       # Code-focused (3.8GB)
-   
-   # Smaller/faster options
-   ollama pull llama3.1:8b     # Faster version (4.7GB)
-   ```
+#### 🤖 Anthropic Claude (Recommended)
+High-quality reasoning and code analysis capabilities:
 
-4. **Use with Spyglass:**
-   ```bash
-   export SPYGLASS_MODEL_BACKEND=ollama
-   spyglass
-   ```
+```bash
+# 1. Get API key from https://console.anthropic.com/account/keys
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# 2. Use with Spyglass
+export SPYGLASS_MODEL_BACKEND=anthropic
+export SPYGLASS_MODEL=claude-3-5-sonnet-20241022  # Optional
+spyglass
+```
+
+**Available Models:**
+- `claude-3-5-sonnet-20241022` - Best balance (recommended)
+- `claude-3-5-haiku-20241022` - Fastest
+- `claude-3-opus-20240229` - Most capable
+
+#### 🧠 OpenAI GPT (Popular)
+Industry-leading models with broad capabilities:
+
+```bash
+# 1. Get API key from https://platform.openai.com/api-keys
+export OPENAI_API_KEY="sk-..."
+
+# 2. Use with Spyglass
+export SPYGLASS_MODEL_BACKEND=openai
+export SPYGLASS_MODEL=gpt-4o  # Optional
+spyglass
+```
+
+**Available Models:**
+- `gpt-4o` - Latest multimodal (recommended)
+- `gpt-4-turbo` - Fast and capable
+- `gpt-4` - Most capable
+
+#### 🔒 Ollama (Local/Air-Gapped)
+Local model execution for maximum privacy and OPSEC:
+
+```bash
+# 1. Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# 2. Start service
+ollama serve
+
+# 3. Pull security-focused models
+ollama pull llama3.1        # General purpose (4.7GB)
+ollama pull codellama       # Code analysis (3.8GB)
+
+# 4. Use with Spyglass
+export SPYGLASS_MODEL_BACKEND=ollama
+export SPYGLASS_MODEL=llama3.1  # Optional
+spyglass
+```
 
 **Benefits:**
-- Air-gapped operation - No internet required after setup
-- Data privacy - All processing happens locally
+- Air-gapped operation - No internet required
+- Complete data privacy - Nothing leaves your machine
 - No API costs - Unlimited usage
-- OPSEC friendly - No data sent to cloud providers
+- OPSEC friendly - No cloud provider logs
 
-### Google Gemini API
+#### 🔍 Google Gemini (Advanced)
+Google's latest models with strong reasoning:
 
-Cloud-based option with high performance:
+```bash
+# 1. Get API key from https://aistudio.google.com/app/apikey
+export GEMINI_API_KEY="..."
 
-1. Generate a key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Set environment variable:
-   ```bash
-   export GEMINI_API_KEY="YOUR_API_KEY"
-   export SPYGLASS_MODEL_BACKEND=gemini
-   ```
+# 2. Use with Spyglass
+export SPYGLASS_MODEL_BACKEND=gemini
+spyglass
+```
 
-### Google Vertex AI
-
+#### 🏢 Google Vertex AI (Enterprise)
 Enterprise Google Cloud integration:
 
 ```bash
-export GOOGLE_API_KEY="YOUR_KEY"
+export GOOGLE_API_KEY="..."
 export GOOGLE_CLOUD_PROJECT="your-project"
 export GOOGLE_CLOUD_LOCATION="us-central1"
 export SPYGLASS_MODEL_BACKEND=vertex
 ```
 
+### Configuration Precedence
+
+Spyglass Agent uses this priority order for backend selection:
+
+1. **Environment Variables** (highest priority)
+   ```bash
+   export SPYGLASS_MODEL_BACKEND=anthropic  # Overrides everything
+   ```
+
+2. **Settings File** (persistent preferences)
+   ```bash
+   ~/.spyglass/settings.json  # Saved preferences
+   ```
+
+3. **Auto-Detection** (fallback)
+   - Detects available API keys automatically
+   - Priority: OpenAI → Anthropic → Gemini → Vertex AI → Ollama
+
 ### Switching Backends
 
-You can easily switch between backends in the CLI:
-
+**Temporary (session-only):**
 ```bash
-/backend status      # Show current backend
-/backend ollama      # Switch to Ollama
-/backend gemini      # Switch to Gemini API
-/backend help        # Setup instructions
+SPYGLASS_MODEL_BACKEND=anthropic spyglass  # Just this run
+```
+
+**Permanent (save preference):**
+```bash
+echo '{"selectedAuthType": "anthropic"}' > ~/.spyglass/settings.json
+```
+
+**In-CLI commands:**
+```bash
+/auth anthropic     # Switch and save preference
+/auth status        # Show current backend
 ```
 
 3. Configure your usage tier based on your security testing requirements.

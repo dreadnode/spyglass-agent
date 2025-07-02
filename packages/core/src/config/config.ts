@@ -29,6 +29,7 @@ import {
 import { WebSearchTool } from '../tools/web-search.js';
 import { NetworkReconTool } from '../tools/network-recon.js';
 import { ExternalReconTool } from '../tools/external-recon.js';
+import { SecurityReportTool } from '../tools/security-report.js';
 import { GeminiClient } from '../core/client.js';
 import { FileDiscoveryService } from '../services/fileDiscoveryService.js';
 import { GitService } from '../services/gitService.js';
@@ -501,8 +502,9 @@ export function createToolRegistry(config: Config): Promise<ToolRegistry> {
   registerCoreTool(ShellTool, config);
   registerCoreTool(MemoryTool);
   registerCoreTool(WebSearchTool, config);
-  registerCoreTool(NetworkReconTool);
-  registerCoreTool(ExternalReconTool);
+  registerCoreTool(NetworkReconTool, targetDir);
+  registerCoreTool(ExternalReconTool, targetDir);
+  registerCoreTool(SecurityReportTool, targetDir);
   return (async () => {
     await registry.discoverTools();
     return registry;

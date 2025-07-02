@@ -27,6 +27,12 @@ export function getDefaultAuthTypeFromEnv(): AuthType | undefined {
     case 'oauth':
     case 'google-oauth':
       return AuthType.LOGIN_WITH_GOOGLE;
+    case 'openai':
+    case 'gpt':
+      return AuthType.USE_OPENAI;
+    case 'anthropic':
+    case 'claude':
+      return AuthType.USE_ANTHROPIC;
     default:
       // Auto-detect based on available credentials
       return autoDetectAuthType();
@@ -34,12 +40,17 @@ export function getDefaultAuthTypeFromEnv(): AuthType | undefined {
 }
 
 function autoDetectAuthType(): AuthType | undefined {
-  // Priority order: Ollama (local first), then Gemini API, then OAuth
+  // Priority order: OpenAI/Anthropic (cloud), Gemini API, Vertex AI, then Ollama (local)
   
-  // Check if Ollama is running (best for air-gapped/local scenarios)
-  const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+  // Check for cloud AI APIs first (usually more reliable than local)
+  if (process.env.OPENAI_API_KEY) {
+    return AuthType.USE_OPENAI;
+  }
   
-  // For now, we'll prioritize API keys since they're more reliable to detect
+  if (process.env.ANTHROPIC_API_KEY) {
+    return AuthType.USE_ANTHROPIC;
+  }
+  
   if (process.env.GEMINI_API_KEY) {
     return AuthType.USE_GEMINI;
   }
@@ -64,6 +75,10 @@ export function getModelBackendDisplayName(authType: AuthType): string {
       return 'Google Vertex AI';
     case AuthType.LOGIN_WITH_GOOGLE:
       return 'Google OAuth';
+    case AuthType.USE_OPENAI:
+      return 'OpenAI API';
+    case AuthType.USE_ANTHROPIC:
+      return 'Anthropic Claude API';
     default:
       return 'Unknown';
   }
@@ -98,6 +113,20 @@ export function getModelBackendInstructions(authType: AuthType): string {
 1. No setup required
 2. Set backend: \`export SPYGLASS_MODEL_BACKEND=oauth\`
 3. Follow login prompts`;
+    
+    case AuthType.USE_OPENAI:
+      return `To use OpenAI API:
+1. Get API key: https://platform.openai.com/api-keys
+2. Set environment variable: \`export OPENAI_API_KEY=your_key_here\`
+3. Set backend: \`export SPYGLASS_MODEL_BACKEND=openai\`
+4. Optional: Set model: \`export SPYGLASS_MODEL=gpt-4o\``;
+    
+    case AuthType.USE_ANTHROPIC:
+      return `To use Anthropic Claude API:
+1. Get API key: https://console.anthropic.com/account/keys
+2. Set environment variable: \`export ANTHROPIC_API_KEY=your_key_here\`
+3. Set backend: \`export SPYGLASS_MODEL_BACKEND=anthropic\`
+4. Optional: Set model: \`export SPYGLASS_MODEL=claude-3-5-sonnet-20241022\``;
     
     default:
       return 'Unknown backend';

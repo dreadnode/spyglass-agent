@@ -207,7 +207,7 @@ describe('MemoryTool', () => {
       // Use getCurrentGeminiMdFilename for the default expectation before any setGeminiMdFilename calls in a test
       const expectedFilePath = path.join(
         '/mock/home',
-        '.gemini',
+        '.spyglass',
         getCurrentGeminiMdFilename(), // This will be DEFAULT_CONTEXT_FILENAME unless changed by a test
       );
 

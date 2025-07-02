@@ -15,6 +15,8 @@ import {
 } from '@google/genai';
 import { createCodeAssistContentGenerator } from '../code_assist/codeAssist.js';
 import { createOllamaContentGenerator } from '../ollama/ollamaContentGenerator.js';
+import { OpenAIContentGenerator } from '../openai/openaiContentGenerator.js';
+import { AnthropicContentGenerator } from '../anthropic/anthropicContentGenerator.js';
 import { DEFAULT_GEMINI_MODEL, DEFAULT_OLLAMA_MODEL } from '../config/models.js';
 import { getEffectiveModel } from './modelCheck.js';
 
@@ -40,6 +42,8 @@ export enum AuthType {
   USE_GEMINI = 'gemini-api-key',
   USE_VERTEX_AI = 'vertex-ai',
   USE_OLLAMA = 'ollama',
+  USE_OPENAI = 'openai',
+  USE_ANTHROPIC = 'anthropic',
 }
 
 export type ContentGeneratorConfig = {
@@ -48,6 +52,9 @@ export type ContentGeneratorConfig = {
   vertexai?: boolean;
   authType?: AuthType | undefined;
   ollamaUrl?: string;
+  baseUrl?: string;
+  customHeaders?: Record<string, string>;
+  timeout?: number;
 };
 
 export async function createContentGeneratorConfig(
@@ -109,6 +116,32 @@ export async function createContentGeneratorConfig(
     return contentGeneratorConfig;
   }
 
+  if (authType === AuthType.USE_OPENAI) {
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is required for OpenAI backend');
+    }
+    contentGeneratorConfig.apiKey = openaiApiKey;
+    // Default to gpt-4 if no model specified for OpenAI
+    if (effectiveModel === DEFAULT_GEMINI_MODEL) {
+      contentGeneratorConfig.model = 'gpt-4';
+    }
+    return contentGeneratorConfig;
+  }
+
+  if (authType === AuthType.USE_ANTHROPIC) {
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+    if (!anthropicApiKey) {
+      throw new Error('ANTHROPIC_API_KEY environment variable is required for Anthropic backend');
+    }
+    contentGeneratorConfig.apiKey = anthropicApiKey;
+    // Default to Claude-3.5 Sonnet if no model specified for Anthropic
+    if (effectiveModel === DEFAULT_GEMINI_MODEL) {
+      contentGeneratorConfig.model = 'claude-3-5-sonnet-20241022';
+    }
+    return contentGeneratorConfig;
+  }
+
   return contentGeneratorConfig;
 }
 
@@ -119,7 +152,7 @@ export async function createContentGenerator(
   const version = process.env.CLI_VERSION || process.version;
   const httpOptions = {
     headers: {
-      'User-Agent': `GeminiCLI/${version} (${process.platform}; ${process.arch})`,
+      'User-Agent': `SpyglassAgent/${version} (${process.platform}; ${process.arch})`,
     },
   };
   if (config.authType === AuthType.LOGIN_WITH_GOOGLE) {
@@ -145,6 +178,14 @@ export async function createContentGenerator(
 
   if (config.authType === AuthType.USE_OLLAMA) {
     return createOllamaContentGenerator(config);
+  }
+
+  if (config.authType === AuthType.USE_OPENAI) {
+    return new OpenAIContentGenerator(config);
+  }
+
+  if (config.authType === AuthType.USE_ANTHROPIC) {
+    return new AnthropicContentGenerator(config);
   }
 
   throw new Error(

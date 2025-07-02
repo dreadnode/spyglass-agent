@@ -8,6 +8,9 @@ import { BaseTool, ToolResult } from './tools.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as net from 'net';
+import process from 'node:process';
+import { SecurityFinding, FindingTypes, FindingUtils } from '../types/security.js';
+import { MemoryFindingStorage } from '../services/findingStorage.js';
 
 const execAsync = promisify(exec);
 
@@ -46,23 +49,7 @@ interface ScanResult {
   };
 }
 
-interface SecurityFinding {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  type: string;
-  target: string;
-  port?: number;
-  protocol?: string;
-  title: string;
-  description: string;
-  impact: string;
-  remediation: string;
-  evidence: string[];
-  references: string[];
-  discoveredAt: Date;
-  discoveredBy: string;
-  status: 'new' | 'confirmed' | 'false-positive' | 'remediated' | 'accepted-risk';
-}
+// SecurityFinding interface now imported from ../types/security.js
 
 const networkReconSchema = {
   name: 'network_recon',
@@ -159,14 +146,16 @@ This tool requires either 'nmap' or 'rustscan' to be installed:
 
 export class NetworkReconTool extends BaseTool<NetworkReconParams, ToolResult> {
   static readonly Name: string = networkReconSchema.name;
+  private targetDir: string;
 
-  constructor() {
+  constructor(targetDir?: string) {
     super(
       NetworkReconTool.Name,
       'Network Reconnaissance',
       networkReconDescription,
       networkReconSchema.parameters as Record<string, unknown>,
     );
+    this.targetDir = targetDir || process.cwd();
   }
 
   async execute(params: NetworkReconParams, signal: AbortSignal): Promise<ToolResult> {
@@ -192,7 +181,7 @@ export class NetworkReconTool extends BaseTool<NetworkReconParams, ToolResult> {
         results.push(...targetResults);
         
         // Generate findings for interesting ports/services
-        const targetFindings = this.generateFindings(targetResults);
+        const targetFindings = await this.generateFindings(targetResults);
         findings.push(...targetFindings);
       }
 
@@ -476,7 +465,7 @@ export class NetworkReconTool extends BaseTool<NetworkReconParams, ToolResult> {
     return await this.runNmapScan(target, nmapParams);
   }
 
-  private generateFindings(results: ScanResult[]): SecurityFinding[] {
+  private async generateFindings(results: ScanResult[]): Promise<SecurityFinding[]> {
     const findings: SecurityFinding[] = [];
     const timestamp = new Date();
 
@@ -498,10 +487,10 @@ export class NetworkReconTool extends BaseTool<NetworkReconParams, ToolResult> {
           description += '. Administrative services should typically not be exposed externally.';
         }
 
-        findings.push({
-          id: `${result.host}-${port.port}-${port.protocol}`,
+        const finding: SecurityFinding = {
+          id: FindingUtils.generateId(result.host, FindingTypes.SERVICE_DISCOVERY, port.port),
           severity,
-          type: 'service-discovery',
+          type: FindingTypes.SERVICE_DISCOVERY,
           target: result.host,
           port: port.port,
           protocol: port.protocol,
@@ -514,7 +503,17 @@ export class NetworkReconTool extends BaseTool<NetworkReconParams, ToolResult> {
           discoveredAt: timestamp,
           discoveredBy: 'NetworkReconTool',
           status: 'new'
-        });
+        };
+        
+        findings.push(finding);
+        
+        // Store finding in centralized storage
+        try {
+          const storage = MemoryFindingStorage.getInstance(this.targetDir);
+          await storage.storeFinding(finding);
+        } catch (error) {
+          console.warn(`[WARN] NetworkRecon: Failed to store finding ${finding.id}: ${error}`);
+        }
       }
     }
 

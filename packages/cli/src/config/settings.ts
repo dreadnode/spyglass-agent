@@ -19,9 +19,12 @@ import { DefaultLight } from '../ui/themes/default-light.js';
 import { DefaultDark } from '../ui/themes/default.js';
 import { getDefaultAuthTypeFromEnv } from './modelBackend.js';
 
-export const SETTINGS_DIRECTORY_NAME = '.gemini';
+export const SETTINGS_DIRECTORY_NAME = '.spyglass';
+export const LEGACY_SETTINGS_DIRECTORY_NAME = '.gemini';
 export const USER_SETTINGS_DIR = path.join(homedir(), SETTINGS_DIRECTORY_NAME);
+export const LEGACY_USER_SETTINGS_DIR = path.join(homedir(), LEGACY_SETTINGS_DIRECTORY_NAME);
 export const USER_SETTINGS_PATH = path.join(USER_SETTINGS_DIR, 'settings.json');
+export const LEGACY_USER_SETTINGS_PATH = path.join(LEGACY_USER_SETTINGS_DIR, 'settings.json');
 
 export enum SettingScope {
   User = 'User',
@@ -106,8 +109,13 @@ export class LoadedSettings {
       ...this.workspace.settings,
     };
     
-    // Auto-detect auth type if not explicitly set
-    if (!merged.selectedAuthType) {
+    // Environment variables override settings file (proper precedence order)
+    const envAuthType = getDefaultAuthTypeFromEnv();
+    if (envAuthType && process.env.SPYGLASS_MODEL_BACKEND) {
+      // Explicit env var overrides everything
+      merged.selectedAuthType = envAuthType;
+    } else if (!merged.selectedAuthType) {
+      // Fall back to auto-detection if no settings
       merged.selectedAuthType = getDefaultAuthTypeFromEnv();
     }
     
@@ -181,10 +189,44 @@ function resolveEnvVarsInObject<T>(obj: T): T {
 }
 
 /**
+ * Migrates settings from legacy .gemini directory to new .spyglass directory
+ */
+function migrateLegacySettings(): void {
+  // Only migrate if new directory doesn't exist but legacy does
+  if (!fs.existsSync(USER_SETTINGS_DIR) && fs.existsSync(LEGACY_USER_SETTINGS_DIR)) {
+    try {
+      // Create new directory
+      fs.mkdirSync(USER_SETTINGS_DIR, { recursive: true });
+      
+      // Copy settings.json if it exists
+      if (fs.existsSync(LEGACY_USER_SETTINGS_PATH)) {
+        fs.copyFileSync(LEGACY_USER_SETTINGS_PATH, USER_SETTINGS_PATH);
+        console.log(`Migrated settings from ${LEGACY_USER_SETTINGS_DIR} to ${USER_SETTINGS_DIR}`);
+      }
+      
+      // Copy other files (like CLAUDE.md, system.md, etc.)
+      const legacyFiles = fs.readdirSync(LEGACY_USER_SETTINGS_DIR);
+      for (const file of legacyFiles) {
+        const legacyFilePath = path.join(LEGACY_USER_SETTINGS_DIR, file);
+        const newFilePath = path.join(USER_SETTINGS_DIR, file);
+        
+        if (fs.statSync(legacyFilePath).isFile() && file !== 'settings.json') {
+          fs.copyFileSync(legacyFilePath, newFilePath);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to migrate legacy settings:', error);
+    }
+  }
+}
+
+/**
  * Loads settings from user and workspace directories.
  * Project settings override user settings.
  */
 export function loadSettings(workspaceDir: string): LoadedSettings {
+  // Migrate legacy settings on first run
+  migrateLegacySettings();
   let userSettings: Settings = {};
   let workspaceSettings: Settings = {};
   const settingsErrors: SettingsError[] = [];

@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2025-07-02T23:16:48.841Z",
+  "findings": [
+    {
+      "id": "45.33.32.156-service-discovery-22-mcmkt7ay",
+      "severity": "medium",
+      "type": "service-discovery",
+      "target": "45.33.32.156",
+      "port": 22,
+      "protocol": "tcp",
+      "title": "Administrative service exposed: ssh",
+      "description": "Port 22/tcp is open running ssh. Administrative services should typically not be exposed externally.",
+      "impact": "SSH provides administrative access if credentials are compromised",
+      "remediation": "Ensure SSH is properly configured with key-based authentication and disable root login",
+      "evidence": [
+        "Port scan revealed ssh on 45.33.32.156:22/tcp"
+      ],
+      "references": [],
+      "discoveredAt": "2025-07-02T23:16:48.826Z",
+      "discoveredBy": "NetworkReconTool",
+      "status": "new"
+    },
+    {
+      "id": "45.33.32.156-service-discovery-80-mcmkt7bd",
+      "severity": "info",
+      "type": "service-discovery",
+      "target": "45.33.32.156",
+      "port": 80,
+      "protocol": "tcp",
+      "title": "Open http service",
+      "description": "Port 80/tcp is open running http",
+      "impact": "Service http on port 80 increases attack surface",
+      "remediation": "Review if http needs to be exposed and implement appropriate access controls",
+      "evidence": [
+        "Port scan revealed http on 45.33.32.156:80/tcp"
+      ],
+      "references": [],
+      "discoveredAt": "2025-07-02T23:16:48.826Z",
+      "discoveredBy": "NetworkReconTool",
+      "status": "new"
+    }
+  ]
+}

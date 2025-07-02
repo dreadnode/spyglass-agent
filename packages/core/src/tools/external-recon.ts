@@ -9,6 +9,9 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as dns from 'dns';
 import * as net from 'net';
+import process from 'node:process';
+import { SecurityFinding, FindingTypes, FindingUtils } from '../types/security.js';
+import { MemoryFindingStorage } from '../services/findingStorage.js';
 
 const execAsync = promisify(exec);
 const dnsResolve4 = promisify(dns.resolve4);
@@ -86,21 +89,7 @@ interface SecurityHeaders {
   hasXContentTypeOptions?: boolean;
 }
 
-interface SecurityFinding {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  type: string;
-  target: string;
-  title: string;
-  description: string;
-  impact: string;
-  remediation: string;
-  evidence: string[];
-  references: string[];
-  discoveredAt: Date;
-  discoveredBy: string;
-  status: 'new' | 'confirmed' | 'false-positive' | 'remediated' | 'accepted-risk';
-}
+// SecurityFinding interface now imported from ../types/security.js
 
 const externalReconSchema = {
   name: 'external_recon',
@@ -196,6 +185,7 @@ This tool provides:
 
 export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult> {
   static readonly Name: string = externalReconSchema.name;
+  private targetDir: string;
 
   // Common subdomains for quick enumeration
   private readonly commonSubdomains = [
@@ -207,13 +197,14 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
     'old', 'new', 'beta', 'alpha', 'v1', 'v2', 'www2', 'www3'
   ];
 
-  constructor() {
+  constructor(targetDir?: string) {
     super(
       ExternalReconTool.Name,
       'External Reconnaissance',
       externalReconDescription,
       externalReconSchema.parameters as Record<string, unknown>,
     );
+    this.targetDir = targetDir || process.cwd();
   }
 
   async execute(params: ExternalReconParams, signal: AbortSignal): Promise<ToolResult> {
@@ -233,19 +224,22 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
         // Perform WHOIS lookup
         if (reconTypes.includes('whois') || reconTypes.includes('all')) {
           domainInfo.whois = await this.performWhoisLookup(domain);
-          findings.push(...this.analyzeWhoisInfo(domain, domainInfo.whois));
+          const whoisFindings = await this.analyzeWhoisInfo(domain, domainInfo.whois);
+          findings.push(...whoisFindings);
         }
         
         // Perform DNS enumeration
         if (reconTypes.includes('dns') || reconTypes.includes('all')) {
           domainInfo.dns = await this.performDnsEnumeration(domain, params.dnsServer);
-          findings.push(...this.analyzeDnsRecords(domain, domainInfo.dns));
+          const dnsFindings = await this.analyzeDnsRecords(domain, domainInfo.dns);
+          findings.push(...dnsFindings);
           
           // Zone transfer attempt if requested
           if (params.zoneTransfer && domainInfo.dns?.ns) {
             domainInfo.zoneTransfer = await this.attemptZoneTransfer(domain, domainInfo.dns.ns);
             if (domainInfo.zoneTransfer.vulnerable) {
-              findings.push(this.createZoneTransferFinding(domain, domainInfo.zoneTransfer));
+              const zoneTransferFinding = await this.createZoneTransferFinding(domain, domainInfo.zoneTransfer);
+              findings.push(zoneTransferFinding);
             }
           }
         }
@@ -257,7 +251,8 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
             params.subdomainWordlist || 'small',
             params.useExternalApis || false
           );
-          findings.push(...this.analyzeSubdomains(domain, domainInfo.subdomains));
+          const subdomainFindings = await this.analyzeSubdomains(domain, domainInfo.subdomains);
+          findings.push(...subdomainFindings);
         }
         
         results.push(domainInfo);
@@ -530,7 +525,7 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
     }
   }
 
-  private analyzeWhoisInfo(domain: string, whois: WhoisInfo): SecurityFinding[] {
+  private async analyzeWhoisInfo(domain: string, whois: WhoisInfo): Promise<SecurityFinding[]> {
     const findings: SecurityFinding[] = [];
     const timestamp = new Date();
 
@@ -540,10 +535,10 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
       const daysUntilExpiry = Math.floor((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
       
       if (daysUntilExpiry < 30 && daysUntilExpiry > 0) {
-        findings.push({
-          id: `${domain}-expiry-warning`,
+        const finding: SecurityFinding = {
+          id: FindingUtils.generateId(domain, FindingTypes.DOMAIN_EXPIRATION),
           severity: 'medium',
-          type: 'domain-expiry',
+          type: FindingTypes.DOMAIN_EXPIRATION,
           target: domain,
           title: 'Domain expiring soon',
           description: `Domain ${domain} expires in ${daysUntilExpiry} days`,
@@ -554,7 +549,17 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
           discoveredAt: timestamp,
           discoveredBy: 'ExternalReconTool',
           status: 'new'
-        });
+        };
+        
+        findings.push(finding);
+        
+        // Store finding in centralized storage
+        try {
+          const storage = MemoryFindingStorage.getInstance(this.targetDir);
+          await storage.storeFinding(finding);
+        } catch (error) {
+          console.warn(`[WARN] ExternalRecon: Failed to store finding ${finding.id}: ${error}`);
+        }
       }
     }
 
@@ -580,7 +585,7 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
     return findings;
   }
 
-  private analyzeDnsRecords(domain: string, dns: DnsRecords): SecurityFinding[] {
+  private async analyzeDnsRecords(domain: string, dns: DnsRecords): Promise<SecurityFinding[]> {
     const findings: SecurityFinding[] = [];
     const timestamp = new Date();
 
@@ -627,7 +632,7 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
     return findings;
   }
 
-  private analyzeSubdomains(domain: string, subdomains: SubdomainInfo[]): SecurityFinding[] {
+  private async analyzeSubdomains(domain: string, subdomains: SubdomainInfo[]): Promise<SecurityFinding[]> {
     const findings: SecurityFinding[] = [];
     const timestamp = new Date();
 
@@ -666,11 +671,11 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
     return findings;
   }
 
-  private createZoneTransferFinding(domain: string, zoneTransfer: ZoneTransferResult): SecurityFinding {
-    return {
-      id: `${domain}-zone-transfer`,
+  private async createZoneTransferFinding(domain: string, zoneTransfer: ZoneTransferResult): Promise<SecurityFinding> {
+    const finding: SecurityFinding = {
+      id: FindingUtils.generateId(domain, FindingTypes.DNS_MISCONFIGURATION),
       severity: 'high',
-      type: 'dns-misconfiguration',
+      type: FindingTypes.DNS_MISCONFIGURATION,
       target: domain,
       title: 'DNS zone transfer allowed',
       description: `DNS server ${zoneTransfer.server} allows unauthorized zone transfers for ${domain}`,
@@ -685,6 +690,16 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
       discoveredBy: 'ExternalReconTool',
       status: 'new'
     };
+    
+    // Store finding in centralized storage
+    try {
+      const storage = MemoryFindingStorage.getInstance(this.targetDir);
+      await storage.storeFinding(finding);
+    } catch (error) {
+      console.warn(`[WARN] ExternalRecon: Failed to store finding ${finding.id}: ${error}`);
+    }
+    
+    return finding;
   }
 
   private formatResults(result: any): string {

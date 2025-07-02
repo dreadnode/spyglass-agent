@@ -46,7 +46,7 @@ Do NOT use this tool:
 `;
 
 export const SPYGLASS_CONFIG_DIR = '.spyglass';
-export const DEFAULT_CONTEXT_FILENAME = 'GEMINI.md';
+export const DEFAULT_CONTEXT_FILENAME = 'CLAUDE.md';
 export const MEMORY_SECTION_HEADER = '## Spyglass Agent Added Memories';
 
 // Legacy aliases for backward compatibility
