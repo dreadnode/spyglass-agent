@@ -49,3 +49,7 @@ The framework supports MCP (Model Context Protocol) servers for specialized red 
 
 ## Development Status
 This is an early adaptation focused on rebranding and red teaming specialization. The core CLI framework is stable, but red teaming-specific features are under development.
+
+## Development Notes
+- **System Prompt Updates**: When adding new tools or MCP integrations, update the system prompt in `packages/core/src/core/prompts.ts` to include references to new tool names using `${ToolName.Name}` template variables
+- **Tool Registry**: New tools should be registered in the tool registry and imported in prompts.ts for proper system prompt integration

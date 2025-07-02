@@ -45,44 +45,52 @@ Do NOT use this tool:
 - \`fact\` (string, required): The specific fact or piece of information to remember. This should be a clear, self-contained statement. For example, if the user says "My favorite color is blue", the fact would be "My favorite color is blue".
 `;
 
-export const GEMINI_CONFIG_DIR = '.gemini';
+export const SPYGLASS_CONFIG_DIR = '.spyglass';
 export const DEFAULT_CONTEXT_FILENAME = 'GEMINI.md';
-export const MEMORY_SECTION_HEADER = '## Gemini Added Memories';
+export const MEMORY_SECTION_HEADER = '## Spyglass Agent Added Memories';
 
-// This variable will hold the currently configured filename for GEMINI.md context files.
-// It defaults to DEFAULT_CONTEXT_FILENAME but can be overridden by setGeminiMdFilename.
-let currentGeminiMdFilename: string | string[] = DEFAULT_CONTEXT_FILENAME;
+// Legacy aliases for backward compatibility
+export const GEMINI_CONFIG_DIR = SPYGLASS_CONFIG_DIR;
 
-export function setGeminiMdFilename(newFilename: string | string[]): void {
+// This variable will hold the currently configured filename for context files.
+// It defaults to DEFAULT_CONTEXT_FILENAME but can be overridden by setClaudeMdFilename.
+let currentClaudeMdFilename: string | string[] = DEFAULT_CONTEXT_FILENAME;
+
+export function setClaudeMdFilename(newFilename: string | string[]): void {
   if (Array.isArray(newFilename)) {
     if (newFilename.length > 0) {
-      currentGeminiMdFilename = newFilename.map((name) => name.trim());
+      currentClaudeMdFilename = newFilename.map((name) => name.trim());
     }
   } else if (newFilename && newFilename.trim() !== '') {
-    currentGeminiMdFilename = newFilename.trim();
+    currentClaudeMdFilename = newFilename.trim();
   }
 }
 
-export function getCurrentGeminiMdFilename(): string {
-  if (Array.isArray(currentGeminiMdFilename)) {
-    return currentGeminiMdFilename[0];
+export function getCurrentClaudeMdFilename(): string {
+  if (Array.isArray(currentClaudeMdFilename)) {
+    return currentClaudeMdFilename[0];
   }
-  return currentGeminiMdFilename;
+  return currentClaudeMdFilename;
 }
 
-export function getAllGeminiMdFilenames(): string[] {
-  if (Array.isArray(currentGeminiMdFilename)) {
-    return currentGeminiMdFilename;
+export function getAllClaudeMdFilenames(): string[] {
+  if (Array.isArray(currentClaudeMdFilename)) {
+    return currentClaudeMdFilename;
   }
-  return [currentGeminiMdFilename];
+  return [currentClaudeMdFilename];
 }
+
+// Legacy aliases for backward compatibility
+export const setGeminiMdFilename = setClaudeMdFilename;
+export const getCurrentGeminiMdFilename = getCurrentClaudeMdFilename;
+export const getAllGeminiMdFilenames = getAllClaudeMdFilenames;
 
 interface SaveMemoryParams {
   fact: string;
 }
 
 function getGlobalMemoryFilePath(): string {
-  return path.join(homedir(), GEMINI_CONFIG_DIR, getCurrentGeminiMdFilename());
+  return path.join(homedir(), SPYGLASS_CONFIG_DIR, getCurrentClaudeMdFilename());
 }
 
 /**
