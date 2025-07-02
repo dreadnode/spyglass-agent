@@ -53,3 +53,86 @@ This is an early adaptation focused on rebranding and red teaming specialization
 ## Development Notes
 - **System Prompt Updates**: When adding new tools or MCP integrations, update the system prompt in `packages/core/src/core/prompts.ts` to include references to new tool names using `${ToolName.Name}` template variables
 - **Tool Registry**: New tools should be registered in the tool registry and imported in prompts.ts for proper system prompt integration
+
+## Red Team Tools Implementation
+
+### NetworkReconTool (IMPLEMENTED)
+**Location**: `packages/redteam-tools/src/reconnaissance/NetworkReconTool.ts`
+
+**Purpose**: Intelligent network reconnaissance wrapping nmap and rustscan with security-first design.
+
+**Key Features**:
+- Smart tool selection (nmap/rustscan with auto-fallback)
+- Scope validation against engagement boundaries  
+- Automatic security finding generation with CVSS-style severity
+- Structured output parsing (XML for nmap, greppable for rustscan)
+- OPSEC considerations (rate limiting, stealth timing)
+- Comprehensive audit logging with sanitized parameters
+
+**Security Controls**:
+- Requires `activeScanning` permission in engagement scope
+- Validates all targets against approved IP ranges
+- Sanitizes sensitive parameters in logs
+- Generates findings for high-risk services (FTP, Telnet, databases)
+- Classifies admin services (SSH, RDP, SNMP) appropriately
+
+**Testing**:
+- Unit tests: `packages/redteam-tools/src/reconnaissance/NetworkReconTool.test.ts`
+- Integration test: `packages/redteam-tools/test-network-recon.js`
+- Run test: `cd packages/redteam-tools && npm run build && node test-network-recon.js [target]`
+
+**Dependencies**: Requires `nmap` or `rustscan` installed on system
+
+**Example Usage**:
+```javascript
+const params = {
+  targets: ['192.168.1.0/24'],
+  scanType: 'quick',
+  serviceDetection: true,
+  preferredTool: 'auto'
+};
+```
+
+**Integration Status**: ✅ INTEGRATED - Available in CLI as `network_recon` tool
+
+### Architecture Pattern for Future Tools
+
+The NetworkReconTool establishes the pattern for all red team tools:
+
+1. **Extend RedTeamTool base class** - provides scope validation, audit logging, error handling
+2. **Implement required methods**:
+   - `getToolName()` - unique identifier
+   - `getRequiredPermissions()` - engagement permissions needed
+   - `extractTargets()` - for scope validation
+   - `executeImpl()` - core tool logic
+   - `getParameterSchema()` - JSON schema for parameters
+3. **Security-first design** - validate scope, sanitize logs, generate findings
+4. **Structured output** - return SecurityFindings and ReconData
+5. **Tool wrapping** - intelligently wrap existing security tools
+6. **Comprehensive testing** - unit tests and integration tests
+
+### Planned Tools
+- **SubdomainEnumTool** - DNS enumeration and subdomain discovery
+- **WebTechTool** - Technology stack and CMS detection  
+- **VulnScanTool** - Automated vulnerability scanning
+- **SecurityReportTool** - Progressive finding documentation and reporting
+
+## UI/UX Branding Updates (Low Priority)
+
+### CLI Icon and Greeting
+**Current Status**: Uses generic Gemini branding
+- **Icon**: `✦` (in `packages/cli/src/ui/components/messages/AIMessage.tsx:25`)
+- **Greeting**: Generic AI responses
+
+**Spyglass Rebranding Ideas**:
+- **Icon Options**: `🔍` (magnifying glass), `👁️` (eye), `🕵️` (detective), `⚡` (spyglass-ish), `◉` (scope crosshair)
+- **Security-themed Greetings**: 
+  - "🔍 Spyglass Agent ready to investigate..."
+  - "👁️ Surveillance mode activated. What's the target?"
+  - "🕵️ Red team operative standing by..."
+  - "⚡ Penetration testing suite loaded and ready..."
+  - "◉ Target acquired. What's the mission?"
+
+**Files to Update**:
+- Icon: `packages/cli/src/ui/components/messages/AIMessage.tsx`
+- Greeting: TBD - need to locate where first response is generated

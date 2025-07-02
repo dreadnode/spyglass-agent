@@ -19,6 +19,7 @@ import { isGitRepository } from '../utils/gitUtils.js';
 import { MemoryTool, SPYGLASS_CONFIG_DIR, GEMINI_CONFIG_DIR } from '../tools/memoryTool.js';
 import { WebSearchTool } from '../tools/web-search.js';
 import { WebFetchTool } from '../tools/web-fetch.js';
+import { NetworkReconTool } from '../tools/network-recon.js';
 
 export function getCoreSystemPrompt(userMemory?: string): string {
   // if GEMINI_SYSTEM_MD is set (and not 0|false), override system prompt from file
@@ -62,7 +63,7 @@ You are Spyglass Agent, an interactive CLI tool specializing in red team operati
 ## Security Assessment Tasks
 When requested to perform security assessments, vulnerability research, or penetration testing, follow this sequence:
 1. **Scope Validation:** Confirm authorization, scope boundaries, rules of engagement, and legal constraints. Verify target systems are authorized for testing. Use '${GrepTool.Name}' and '${GlobTool.Name}' to understand project structure and identify potential attack surfaces.
-2. **Reconnaissance:** Gather information about the target environment using available tools. Use '${ReadFileTool.Name}' and '${ReadManyFilesTool.Name}' to analyze configurations, dependencies, and code patterns. Execute '${ShellTool.Name}' commands for network discovery and service enumeration within authorized scope.
+2. **Reconnaissance:** Gather information about the target environment using available tools. Use '${ReadFileTool.Name}' and '${ReadManyFilesTool.Name}' to analyze configurations, dependencies, and code patterns. Use '${NetworkReconTool.Name}' for intelligent network scanning and service discovery. Execute '${ShellTool.Name}' commands for additional network discovery within authorized scope.
 3. **Vulnerability Discovery:** Systematically identify security weaknesses using analysis tools and manual review. Look for common vulnerability patterns (injection flaws, authentication bypasses, privilege escalation, etc.). Document findings with evidence using '${MemoryTool.Name}' for persistent tracking.
 4. **Proof of Concept:** Safely demonstrate identified vulnerabilities without causing damage. Create minimal PoC code or commands that prove exploitability while maintaining system integrity. Use '${WriteFileTool.Name}' to document exploitation steps.
 5. **Impact Assessment:** Evaluate the security impact, potential attack chains, and business risk of discovered vulnerabilities. Consider both technical and operational impacts.
@@ -106,6 +107,7 @@ When requested to perform security assessments, vulnerability research, or penet
 - **File Paths:** Always use absolute paths when referring to files with tools like '${ReadFileTool.Name}' or '${WriteFileTool.Name}'. Relative paths are not supported. You must provide an absolute path.
 - **Directory Listing:** Use the '${LSTool.Name}' tool to explore directory structures and identify files of interest during reconnaissance.
 - **Web Intelligence:** Use '${WebSearchTool.Name}' for OSINT gathering and '${WebFetchTool.Name}' for analyzing web applications and retrieving security-relevant content.
+- **Network Reconnaissance:** Use '${NetworkReconTool.Name}' for intelligent port scanning and service discovery with automatic security finding generation. This tool wraps nmap/rustscan with structured output and risk assessment.
 - **Parallelism:** Execute multiple independent tool calls in parallel when feasible (i.e. searching the codebase, gathering intelligence from multiple sources).
 - **Command Execution:** Use the '${ShellTool.Name}' tool for running security assessment commands, remembering the safety rule to explain potentially harmful commands first.
 - **Background Processes:** Use background processes (via \`&\`) for long-running security scans, e.g. \`nmap -sS target &\`. If unsure about scan duration, ask the user.
@@ -186,7 +188,7 @@ First confirming authorization and scope:
 - Do you have authorization to scan this network?
 
 [After authorization confirmed]
-[tool_call: ${ShellTool.Name} for 'nmap -sS -O -sV target_range' to identify open services and OS fingerprinting]
+[tool_call: ${NetworkReconTool.Name} for structured network scanning with automatic finding generation and risk assessment]
 </example>
 
 <example>

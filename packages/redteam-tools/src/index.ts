@@ -18,7 +18,7 @@ export * from './types/index.js';
 
 // TODO: Add these exports as tools are implemented
 // export * from './base/RedTeamMCPServer.js';
-// export * from './reconnaissance/NetworkReconTool.js';
+export * from './reconnaissance/NetworkReconTool.js';
 // export * from './reconnaissance/SubdomainEnumTool.js';
 // export * from './reconnaissance/WebTechTool.js';
 // export * from './vulnerability-assessment/VulnScanTool.js';
