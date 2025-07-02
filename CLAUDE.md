@@ -57,7 +57,7 @@ This is an early adaptation focused on rebranding and red teaming specialization
 ## Red Team Tools Implementation
 
 ### NetworkReconTool (IMPLEMENTED)
-**Location**: `packages/redteam-tools/src/reconnaissance/NetworkReconTool.ts`
+**Location**: `packages/core/src/tools/network-recon.ts`
 
 **Purpose**: Intelligent network reconnaissance wrapping nmap and rustscan with security-first design.
 
@@ -94,6 +94,43 @@ const params = {
 ```
 
 **Integration Status**: ✅ INTEGRATED - Available in CLI as `network_recon` tool
+
+### ExternalReconTool (IMPLEMENTED)
+**Location**: `packages/core/src/tools/external-recon.ts`
+
+**Purpose**: Comprehensive external reconnaissance for domain intelligence gathering and DNS footprinting.
+
+**Key Features**:
+- WHOIS lookup and analysis (domain age, registrar, DNSSEC status)
+- DNS record enumeration (A, AAAA, MX, TXT, NS, CNAME, SOA)
+- Subdomain discovery through brute-forcing and dnsrecon integration
+- Zone transfer vulnerability testing
+- Security finding generation for missing SPF/DMARC/DKIM
+- Intelligent subdomain classification (dev/staging, admin panels, backups)
+
+**Security Controls**:
+- Requires explicit authorization for target domains
+- Validates all operations stay within engagement scope
+- Generates findings for DNS misconfigurations
+- Identifies exposed non-production environments
+- Detects zone transfer vulnerabilities
+
+**Dependencies**: 
+- `whois` - Domain registration information
+- `dig` - DNS queries (usually pre-installed)
+- `dnsrecon` (optional) - Enhanced subdomain discovery
+
+**Example Usage**:
+```javascript
+const params = {
+  domains: ['example.com'],
+  reconTypes: ['all'],
+  zoneTransfer: true,
+  subdomainWordlist: 'medium'
+};
+```
+
+**Integration Status**: ✅ INTEGRATED - Available in CLI as `external_recon` tool
 
 ### Architecture Pattern for Future Tools
 

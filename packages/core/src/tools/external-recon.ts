@@ -717,11 +717,11 @@ export class ExternalReconTool extends BaseTool<ExternalReconParams, ToolResult>
         summary += `**📡 DNS Records:**\n`;
         if (domainInfo.dns.a) summary += `- A: ${domainInfo.dns.a.join(', ')}\n`;
         if (domainInfo.dns.mx) {
-          summary += `- MX: ${domainInfo.dns.mx.map(mx => `${mx.exchange} (${mx.priority})`).join(', ')}\n`;
+          summary += `- MX: ${domainInfo.dns.mx.map((mx: { exchange: string; priority: number }) => `${mx.exchange} (${mx.priority})`).join(', ')}\n`;
         }
         if (domainInfo.dns.ns) summary += `- NS: ${domainInfo.dns.ns.join(', ')}\n`;
         if (domainInfo.dns.txt) {
-          const importantTxt = domainInfo.dns.txt.filter(txt => 
+          const importantTxt = domainInfo.dns.txt.filter((txt: string) => 
             txt.includes('v=spf1') || txt.includes('v=DMARC1') || txt.includes('v=DKIM1')
           );
           if (importantTxt.length > 0) {
