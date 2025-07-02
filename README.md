@@ -4,7 +4,7 @@
 
 ![Spyglass Agent Screenshot](./docs/assets/spyglass-screenshot.png)
 
-This repository contains Spyglass Agent, a command-line AI workflow tool designed specifically for red teaming and offensive security operations. Built on a foundation adapted from Google's Gemini CLI, it integrates with Claude AI to provide intelligent assistance for security testing workflows.
+This repository contains Spyglass Agent, a command-line AI workflow tool designed specifically for red teaming and offensive security operations. Built on a foundation adapted from Google's Gemini CLI, it provides intelligent assistance for security testing workflows.
 
 With Spyglass Agent you can:
 
@@ -34,20 +34,82 @@ With Spyglass Agent you can:
    ```
 
 3. **Pick a color theme**
-4. **Authenticate:** When prompted, configure your Claude AI credentials for secure access to advanced AI capabilities optimized for security analysis.
+4. **Choose your AI backend:** Spyglass Agent supports multiple AI backends for maximum flexibility and security.
 
 You are now ready to use Spyglass Agent for your authorized security testing!
 
-### Use a Claude API key:
+## AI Backend Options
 
-The Claude API provides advanced reasoning capabilities ideal for security analysis:
+Spyglass Agent supports multiple AI backends to meet different security and operational requirements:
 
-1. Generate a key from [Anthropic Console](https://console.anthropic.com/).
-2. Set it as an environment variable in your terminal. Replace `YOUR_API_KEY` with your generated key.
+### Ollama (Local)
 
+Local model execution for air-gapped environments and data privacy:
+
+1. **Install Ollama:**
    ```bash
-   export CLAUDE_API_KEY="YOUR_API_KEY"
+   curl -fsSL https://ollama.ai/install.sh | sh
    ```
+
+2. **Start Ollama service:**
+   ```bash
+   ollama serve
+   ```
+
+3. **Pull a recommended model:**
+   ```bash
+   # Best for security work
+   ollama pull llama3.1        # General purpose (4.7GB)
+   ollama pull codellama       # Code-focused (3.8GB)
+   
+   # Smaller/faster options
+   ollama pull llama3.1:8b     # Faster version (4.7GB)
+   ```
+
+4. **Use with Spyglass:**
+   ```bash
+   export SPYGLASS_MODEL_BACKEND=ollama
+   spyglass
+   ```
+
+**Benefits:**
+- Air-gapped operation - No internet required after setup
+- Data privacy - All processing happens locally
+- No API costs - Unlimited usage
+- OPSEC friendly - No data sent to cloud providers
+
+### Google Gemini API
+
+Cloud-based option with high performance:
+
+1. Generate a key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Set environment variable:
+   ```bash
+   export GEMINI_API_KEY="YOUR_API_KEY"
+   export SPYGLASS_MODEL_BACKEND=gemini
+   ```
+
+### Google Vertex AI
+
+Enterprise Google Cloud integration:
+
+```bash
+export GOOGLE_API_KEY="YOUR_KEY"
+export GOOGLE_CLOUD_PROJECT="your-project"
+export GOOGLE_CLOUD_LOCATION="us-central1"
+export SPYGLASS_MODEL_BACKEND=vertex
+```
+
+### Switching Backends
+
+You can easily switch between backends in the CLI:
+
+```bash
+/backend status      # Show current backend
+/backend ollama      # Switch to Ollama
+/backend gemini      # Switch to Gemini API
+/backend help        # Setup instructions
+```
 
 3. Configure your usage tier based on your security testing requirements.
 
@@ -55,7 +117,7 @@ For other authentication methods and security configurations, see the [authentic
 
 ## Examples
 
-Once the CLI is running, you can start conducting security analysis with Claude from your shell.
+Once the CLI is running, you can start conducting security analysis from your shell.
 
 You can start a security assessment from a target directory:
 
