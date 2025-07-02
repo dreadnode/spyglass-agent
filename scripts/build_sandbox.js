@@ -77,23 +77,23 @@ if (!argv.s) {
   execSync('npm run build --workspaces', { stdio: 'inherit' });
 }
 
-console.log('packing @google/gemini-cli ...');
+console.log('packing @dreadnode/spyglass-agent-cli ...');
 const cliPackageDir = join('packages', 'cli');
 rmSync(join(cliPackageDir, 'dist', 'google-gemini-cli-*.tgz'), { force: true });
 execSync(
-  `npm pack -w @google/gemini-cli --pack-destination ./packages/cli/dist`,
+  `npm pack -w @dreadnode/spyglass-agent-cli --pack-destination ./packages/cli/dist`,
   {
     stdio: 'ignore',
   },
 );
 
-console.log('packing @google/gemini-cli-core ...');
+console.log('packing @dreadnode/spyglass-agent-core ...');
 const corePackageDir = join('packages', 'core');
 rmSync(join(corePackageDir, 'dist', 'google-gemini-cli-core-*.tgz'), {
   force: true,
 });
 execSync(
-  `npm pack -w @google/gemini-cli-core --pack-destination ./packages/core/dist`,
+  `npm pack -w @dreadnode/spyglass-agent-core --pack-destination ./packages/core/dist`,
   { stdio: 'ignore' },
 );
 

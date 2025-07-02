@@ -16,7 +16,7 @@ import {
   uiTelemetryService,
   SessionMetrics,
   ModelMetrics,
-} from '@google/gemini-cli-core';
+} from '@dreadnode/spyglass-agent-core';
 
 // --- Interface Definitions ---
 

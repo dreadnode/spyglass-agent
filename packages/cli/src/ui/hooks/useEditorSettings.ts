@@ -11,7 +11,7 @@ import {
   allowEditorTypeInSandbox,
   checkHasEditorType,
   EditorType,
-} from '@google/gemini-cli-core';
+} from '@dreadnode/spyglass-agent-core';
 
 interface UseEditorSettingsReturn {
   isEditorDialogOpen: boolean;

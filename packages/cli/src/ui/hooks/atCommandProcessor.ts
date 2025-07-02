@@ -12,7 +12,7 @@ import {
   getErrorMessage,
   isNodeError,
   unescapePath,
-} from '@google/gemini-cli-core';
+} from '@dreadnode/spyglass-agent-core';
 import {
   HistoryItem,
   IndividualToolCallDisplay,

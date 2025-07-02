@@ -18,7 +18,7 @@ import {
   MCPServerStatus,
   getMCPDiscoveryState,
   getMCPServerStatus,
-} from '@google/gemini-cli-core';
+} from '@dreadnode/spyglass-agent-core';
 import { useSessionStats } from '../contexts/SessionContext.js';
 import {
   Message,
