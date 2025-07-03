@@ -237,6 +237,15 @@ ${textContent}
 
     const geminiClient = this.config.getGeminiClient();
 
+    // Check if backend supports urlContext feature (Gemini-only)
+    const contentGenerator = geminiClient.getContentGenerator();
+    const isGeminiBackend = this.isGeminiBackend(contentGenerator);
+    
+    if (!isGeminiBackend) {
+      console.debug('[WebFetchTool] Non-Gemini backend detected, using fallback method');
+      return this.executeFallback(params, signal);
+    }
+
     try {
       const response = await geminiClient.generateContent(
         [{ role: 'user', parts: [{ text: userPrompt }] }],
@@ -353,5 +362,19 @@ ${sourceListFormatted.join('\n')}`;
         returnDisplay: `Error: ${errorMessage}`,
       };
     }
+  }
+
+  /**
+   * Detects if the current backend is Gemini-based
+   */
+  private isGeminiBackend(contentGenerator: any): boolean {
+    if (!contentGenerator || !contentGenerator.constructor) {
+      return false;
+    }
+    
+    const generatorName = contentGenerator.constructor.name;
+    return generatorName.includes('Google') || 
+           generatorName.includes('Gemini') || 
+           generatorName.includes('models');
   }
 }

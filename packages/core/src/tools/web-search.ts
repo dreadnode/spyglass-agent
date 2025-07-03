@@ -114,6 +114,18 @@ export class WebSearchTool extends BaseTool<
     }
     const geminiClient = this.config.getGeminiClient();
 
+    // Check if backend supports googleSearch feature (Gemini-only)
+    const contentGenerator = geminiClient.getContentGenerator();
+    const isGeminiBackend = this.isGeminiBackend(contentGenerator);
+    
+    if (!isGeminiBackend) {
+      console.debug('[WebSearchTool] Non-Gemini backend detected, web search not available');
+      return {
+        llmContent: `Web search is only available with Gemini backend. Current backend does not support web search functionality.`,
+        returnDisplay: 'Web search not available with current backend.',
+      };
+    }
+
     try {
       const response = await geminiClient.generateContent(
         [{ role: 'user', parts: [{ text: params.query }] }],
@@ -191,5 +203,19 @@ export class WebSearchTool extends BaseTool<
         returnDisplay: `Error performing web search.`,
       };
     }
+  }
+
+  /**
+   * Detects if the current backend is Gemini-based
+   */
+  private isGeminiBackend(contentGenerator: any): boolean {
+    if (!contentGenerator || !contentGenerator.constructor) {
+      return false;
+    }
+    
+    const generatorName = contentGenerator.constructor.name;
+    return generatorName.includes('Google') || 
+           generatorName.includes('Gemini') || 
+           generatorName.includes('models');
   }
 }

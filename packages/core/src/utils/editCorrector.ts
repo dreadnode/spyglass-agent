@@ -15,7 +15,6 @@ import { EditToolParams } from '../tools/edit.js';
 import { LruCache } from './LruCache.js';
 import { DEFAULT_GEMINI_FLASH_MODEL } from '../config/models.js';
 
-const EditModel = DEFAULT_GEMINI_FLASH_MODEL;
 const EditConfig: GenerateContentConfig = {
   thinkingConfig: {
     thinkingBudget: 0,
@@ -65,6 +64,7 @@ export async function ensureCorrectEdit(
   originalParams: EditToolParams, // This is the EditToolParams from edit.ts, without \'corrected\'
   client: GeminiClient,
   abortSignal: AbortSignal,
+  model?: string,
 ): Promise<CorrectedEditResult> {
   const cacheKey = `${currentContent}---${originalParams.old_string}---${originalParams.new_string}`;
   const cachedResult = editCorrectionCache.get(cacheKey);
@@ -89,6 +89,7 @@ export async function ensureCorrectEdit(
         finalOldString,
         originalParams.new_string,
         abortSignal,
+        model,
       );
     }
   } else if (occurrences > expectedReplacements) {
@@ -137,6 +138,7 @@ export async function ensureCorrectEdit(
           unescapedOldStringAttempt, // corrected old
           originalParams.new_string, // original new (which is potentially escaped)
           abortSignal,
+          model,
         );
       }
     } else if (occurrences === 0) {
@@ -145,6 +147,7 @@ export async function ensureCorrectEdit(
         currentContent,
         unescapedOldStringAttempt,
         abortSignal,
+        model,
       );
       const llmOldOccurrences = countOccurrences(
         currentContent,
@@ -165,6 +168,7 @@ export async function ensureCorrectEdit(
             llmCorrectedOldString, // corrected old
             baseNewStringForLLMCorrection, // base new for correction
             abortSignal,
+            model,
           );
         }
       } else {
@@ -213,6 +217,7 @@ export async function ensureCorrectFileContent(
   content: string,
   client: GeminiClient,
   abortSignal: AbortSignal,
+  model?: string,
 ): Promise<string> {
   const cachedResult = fileContentCorrectionCache.get(content);
   if (cachedResult) {
@@ -230,6 +235,7 @@ export async function ensureCorrectFileContent(
     content,
     client,
     abortSignal,
+    model,
   );
   fileContentCorrectionCache.set(content, correctedContent);
   return correctedContent;
@@ -253,6 +259,7 @@ export async function correctOldStringMismatch(
   fileContent: string,
   problematicSnippet: string,
   abortSignal: AbortSignal,
+  model?: string,
 ): Promise<string> {
   const prompt = `
 Context: A process needs to find an exact literal, unique match for a specific text snippet within a file's content. The provided snippet failed to match exactly. This is most likely because it has been overly escaped.
@@ -282,7 +289,7 @@ Return ONLY the corrected target snippet in the specified JSON format with the k
       contents,
       OLD_STRING_CORRECTION_SCHEMA,
       abortSignal,
-      EditModel,
+      model || DEFAULT_GEMINI_FLASH_MODEL,
       EditConfig,
     );
 
@@ -331,6 +338,7 @@ export async function correctNewString(
   correctedOldString: string,
   originalNewString: string,
   abortSignal: AbortSignal,
+  model?: string,
 ): Promise<string> {
   if (originalOldString === correctedOldString) {
     return originalNewString;
@@ -370,7 +378,7 @@ Return ONLY the corrected string in the specified JSON format with the key 'corr
       contents,
       NEW_STRING_CORRECTION_SCHEMA,
       abortSignal,
-      EditModel,
+      model || DEFAULT_GEMINI_FLASH_MODEL,
       EditConfig,
     );
 
@@ -410,6 +418,7 @@ export async function correctNewStringEscaping(
   oldString: string,
   potentiallyProblematicNewString: string,
   abortSignal: AbortSignal,
+  model?: string,
 ): Promise<string> {
   const prompt = `
 Context: A text replacement operation is planned. The text to be replaced (old_string) has been correctly identified in the file. However, the replacement text (new_string) might have been improperly escaped by a previous LLM generation (e.g. too many backslashes for newlines like \\n instead of \n, or unnecessarily quotes like \\"Hello\\" instead of "Hello").
@@ -439,7 +448,7 @@ Return ONLY the corrected string in the specified JSON format with the key 'corr
       contents,
       CORRECT_NEW_STRING_ESCAPING_SCHEMA,
       abortSignal,
-      EditModel,
+      model || DEFAULT_GEMINI_FLASH_MODEL,
       EditConfig,
     );
 
@@ -481,6 +490,7 @@ export async function correctStringEscaping(
   potentiallyProblematicString: string,
   client: GeminiClient,
   abortSignal: AbortSignal,
+  model?: string,
 ): Promise<string> {
   const prompt = `
 Context: An LLM has just generated potentially_problematic_string and the text might have been improperly escaped (e.g. too many backslashes for newlines like \\n instead of \n, or unnecessarily quotes like \\"Hello\\" instead of "Hello").
@@ -505,7 +515,7 @@ Return ONLY the corrected string in the specified JSON format with the key 'corr
       contents,
       CORRECT_STRING_ESCAPING_SCHEMA,
       abortSignal,
-      EditModel,
+      model || DEFAULT_GEMINI_FLASH_MODEL,
       EditConfig,
     );
 

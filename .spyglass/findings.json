@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2025-07-02T23:16:48.841Z",
+  "lastUpdated": "2025-07-03T19:35:14.414Z",
   "findings": [
     {
       "id": "45.33.32.156-service-discovery-22-mcmkt7ay",
@@ -39,6 +39,50 @@
       "discoveredAt": "2025-07-02T23:16:48.826Z",
       "discoveredBy": "NetworkReconTool",
       "status": "new"
+    },
+    {
+      "id": "ai-redteam-1751566010127-73g192d5h",
+      "type": "security-misconfiguration",
+      "severity": "high",
+      "title": "AI Security Issue: Garak Execution",
+      "description": "Failed to execute Garak: Command failed: docker run --rm nvidia/garak --model-type openai --model-name https://librarian.platform.dreadnode.io/score --output json --probes promptinject --probes jailbreak --probes toxicity --probes bias --model-api-key Yv_nP3DiYPRtF9DuTXRLrWz2HXuZdHdA --max-tests 100\ndocker: Cannot connect to the Docker daemon at unix:///Users/robmulla/.docker/run/docker.sock. Is the docker daemon running?\n\nRun 'docker run --help' for more information\n",
+      "impact": "AI security vulnerability detected: tool-error",
+      "remediation": "Implement input validation and sanitization. Add rate limiting and monitoring. Regular security testing and red teaming",
+      "target": "https://librarian.platform.dreadnode.io/score",
+      "evidence": [],
+      "references": [
+        "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+      ],
+      "discoveredAt": "2025-07-03T18:06:50.127Z",
+      "discoveredBy": "ai_redteam, ai_redteam, ai_redteam, ai_redteam, ai_redteam, ai_redteam, ai_redteam",
+      "status": "new",
+      "cvssVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:N",
+      "cvssScore": 0,
+      "metadata": {
+        "testCategory": "tool-error",
+        "aiRedTeamTool": true
+      }
+    },
+    {
+      "id": "52.42.14.5-service-discovery-443-mcnq0226",
+      "severity": "info",
+      "type": "service-discovery",
+      "target": "52.42.14.5",
+      "port": 443,
+      "protocol": "tcp",
+      "title": "Open http service",
+      "description": "Port 443/tcp is open running http",
+      "impact": "Service http on port 443 increases attack surface",
+      "remediation": "Review if http needs to be exposed and implement appropriate access controls",
+      "evidence": [
+        "Port scan revealed http on 52.42.14.5:443/tcp"
+      ],
+      "references": [],
+      "discoveredAt": "2025-07-03T18:29:52.878Z",
+      "discoveredBy": "NetworkReconTool",
+      "status": "new",
+      "cvssScore": 5.3,
+      "cvssVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
     }
   ]
 }

@@ -240,6 +240,7 @@ Expectation for required parameters:
         params,
         this.client,
         abortSignal,
+        this.config.getModel(),
       );
       finalOldString = correctedEdit.params.old_string;
       finalNewString = correctedEdit.params.new_string;

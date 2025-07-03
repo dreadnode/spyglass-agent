@@ -368,6 +368,7 @@ export class WriteFileTool
         },
         this.client,
         abortSignal,
+        this.config.getModel(),
       );
       correctedContent = correctedParams.new_string;
     } else {
@@ -376,6 +377,7 @@ export class WriteFileTool
         proposedContent,
         this.client,
         abortSignal,
+        this.config.getModel(),
       );
     }
     return { originalContent, correctedContent, fileExists };

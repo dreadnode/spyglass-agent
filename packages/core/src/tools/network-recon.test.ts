@@ -117,7 +117,7 @@ describe('NetworkReconTool', () => {
 
     it('should fall back to nmap when rustscan fails', async () => {
       // Update mock to fail rustscan but succeed with nmap
-      mockExec.mockImplementation((cmd, opts, callback) => {
+      mockExec.mockImplementation((cmd: string, opts: any, callback?: any) => {
         const cb = typeof opts === 'function' ? opts : callback;
         
         if (cmd.includes('which rustscan')) {
@@ -157,7 +157,7 @@ describe('NetworkReconTool', () => {
     });
 
     it('should perform custom port scan', async () => {
-      mockExec.mockImplementation((cmd, opts, callback) => {
+      mockExec.mockImplementation((cmd: string, opts: any, callback?: any) => {
         const cb = typeof opts === 'function' ? opts : callback;
         
         if (cmd.includes('which rustscan')) {
@@ -202,7 +202,7 @@ describe('NetworkReconTool', () => {
     });
 
     it('should generate security findings for high-risk services', async () => {
-      mockExec.mockImplementation((cmd, opts, callback) => {
+      mockExec.mockImplementation((cmd: string, opts: any, callback?: any) => {
         const cb = typeof opts === 'function' ? opts : callback;
         
         if (cmd.includes('which rustscan')) {
@@ -265,7 +265,7 @@ describe('NetworkReconTool', () => {
 
     it('should handle tool not available error', async () => {
       // Mock both tools as unavailable
-      mockExec.mockImplementation((cmd, opts, callback) => {
+      mockExec.mockImplementation((cmd: string, opts: any, callback?: any) => {
         const cb = typeof opts === 'function' ? opts : callback;
         
         if (cmd.includes('which')) {
@@ -286,7 +286,7 @@ describe('NetworkReconTool', () => {
     });
 
     it('should apply scan options correctly', async () => {
-      mockExec.mockImplementation((cmd, opts, callback) => {
+      mockExec.mockImplementation((cmd: string, opts: any, callback?: any) => {
         const cb = typeof opts === 'function' ? opts : callback;
         
         if (cmd.includes('which rustscan')) {
@@ -335,7 +335,7 @@ describe('NetworkReconTool', () => {
     });
 
     it('should handle no open ports found', async () => {
-      mockExec.mockImplementation((cmd, opts, callback) => {
+      mockExec.mockImplementation((cmd: string, opts: any, callback?: any) => {
         const cb = typeof opts === 'function' ? opts : callback;
         
         if (cmd.includes('which rustscan')) {
@@ -381,7 +381,7 @@ describe('NetworkReconTool', () => {
     });
 
     it('should accept valid scan types', async () => {
-      mockExec.mockImplementation((cmd, opts, callback) => {
+      mockExec.mockImplementation((cmd: string, opts: any, callback?: any) => {
         const cb = typeof opts === 'function' ? opts : callback;
         
         if (cmd.includes('which rustscan')) {

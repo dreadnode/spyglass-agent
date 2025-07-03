@@ -8,6 +8,7 @@ import { Content, SchemaUnion, Type } from '@google/genai';
 import { GeminiClient } from '../core/client.js';
 import { GeminiChat } from '../core/geminiChat.js';
 import { isFunctionResponse } from './messageInspectors.js';
+import { AuthType } from '../core/contentGenerator.js';
 
 const CHECK_PROMPT = `Analyze *only* the content and structure of your immediately preceding response (your last turn in the conversation history). Based *strictly* on that response, determine who should logically speak next: the 'user' or the 'model' (you).
 **Decision Rules (apply in order):**
@@ -63,6 +64,27 @@ export async function checkNextSpeaker(
   geminiClient: GeminiClient,
   abortSignal: AbortSignal,
 ): Promise<NextSpeakerResponse | null> {
+  // QUICK FIX: Skip nextSpeakerChecker for non-Gemini backends
+  // This prevents HTTP 404 errors when using Anthropic, OpenAI, or Ollama backends
+  try {
+    const contentGenerator = geminiClient.getContentGenerator();
+    if (contentGenerator && contentGenerator.constructor) {
+      const generatorName = contentGenerator.constructor.name;
+      const isGeminiBackend = generatorName.includes('Google') || 
+                             generatorName.includes('Gemini') || 
+                             generatorName.includes('models'); // Google GenAI models object
+      
+      if (!isGeminiBackend) {
+        console.log(`[DEBUG] Skipping nextSpeakerChecker for non-Gemini backend: ${generatorName}`);
+        return null; // Graceful degradation - conversation waits for user input
+      }
+    }
+  } catch (error) {
+    // If we can't determine the backend, skip nextSpeakerChecker to be safe
+    console.log(`[DEBUG] Skipping nextSpeakerChecker due to backend detection error: ${error}`);
+    return null;
+  }
+
   // We need to capture the curated history because there are many moments when the model will return invalid turns
   // that when passed back up to the endpoint will break subsequent calls. An example of this is when the model decides
   // to respond with an empty part collection if you were to send that message back to the server it will respond with

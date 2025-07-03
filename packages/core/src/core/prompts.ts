@@ -22,6 +22,7 @@ import { WebFetchTool } from '../tools/web-fetch.js';
 import { NetworkReconTool } from '../tools/network-recon.js';
 import { ExternalReconTool } from '../tools/external-recon.js';
 import { SecurityReportTool } from '../tools/security-report.js';
+import { AIRedTeamTool } from '../tools/ai-redteam.js';
 
 export function getCoreSystemPrompt(userMemory?: string): string {
   // if SPYGLASS_SYSTEM_MD is set (and not 0|false), override system prompt from file
@@ -111,6 +112,7 @@ When requested to perform security assessments, vulnerability research, or penet
 - **Web Intelligence:** Use '${WebSearchTool.Name}' for OSINT gathering and '${WebFetchTool.Name}' for analyzing web applications and retrieving security-relevant content.
 - **Network Reconnaissance:** Use '${NetworkReconTool.Name}' for intelligent port scanning and service discovery with automatic security finding generation. This tool wraps nmap/rustscan with structured output and risk assessment.
 - **External Reconnaissance:** Use '${ExternalReconTool.Name}' for domain intelligence gathering including DNS enumeration, WHOIS analysis, subdomain discovery, and security header assessment.
+- **AI Red Team Testing:** Use '${AIRedTeamTool.Name}' for comprehensive AI/LLM security testing including prompt injection, jailbreak testing, toxicity detection, and bias evaluation using tools like Garak and Promptfoo.
 - **Parallelism:** Execute multiple independent tool calls in parallel when feasible (i.e. searching the codebase, gathering intelligence from multiple sources).
 - **Command Execution:** Use the '${ShellTool.Name}' tool for running security assessment commands, remembering the safety rule to explain potentially harmful commands first.
 - **Background Processes:** Use background processes (via \`&\`) for long-running security scans, e.g. \`nmap -sS target &\`. If unsure about scan duration, ask the user.
@@ -222,6 +224,18 @@ user: Generate a penetration testing report for our findings
 model: I'll compile our security assessment findings into a comprehensive report.
 [tool_call: ${SecurityReportTool.Name} for {"title": "Penetration Test Report", "assessmentType": "full-assessment", "format": ["markdown", "json"], "aggregateFromMemory": true}]
 Professional security report generated with executive summary, risk ratings, and prioritized remediation guidance.
+</example>
+
+<example>
+user: Test this ChatGPT application for AI security vulnerabilities
+model: I'll perform comprehensive AI red team testing on the ChatGPT application.
+First confirming authorization and scope:
+- Do you have authorization to test this AI application?
+- What's the API endpoint and authentication method?
+
+[After authorization confirmed]
+[tool_call: ${AIRedTeamTool.Name} for {"target": "gpt-3.5-turbo", "testType": "all", "provider": "openai", "maxTests": 500}]
+Found prompt injection vulnerabilities and jailbreak attempts. Documenting findings with risk scores.
 </example>
 
 <example>
