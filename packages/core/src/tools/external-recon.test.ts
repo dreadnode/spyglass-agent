@@ -148,7 +148,7 @@ DNSSEC: unsigned
 
       // Tool handles graceful degradation when external tools aren't available
       expect(parsedResult.success).toBe(true);
-      expect(result.returnDisplay).toContain('External reconnaissance completed');
+      expect(result.returnDisplay).toContain('Scan completed at:');
     });
 
     it('should handle multiple domains', async () => {

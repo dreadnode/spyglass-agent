@@ -186,8 +186,7 @@ describe('NetworkReconTool', () => {
         }
       ];
 
-      const generateFindings = (networkRecon as any).generateFindings;
-      const findings = generateFindings(mockResults);
+      const findings = (networkRecon as any).generateFindings(mockResults);
       
       expect(findings).toHaveLength(3);
       
@@ -239,7 +238,7 @@ describe('NetworkReconTool', () => {
       };
 
       try {
-        await networkRecon.execute(invalidParams);
+        await (networkRecon as any).executeImpl(invalidParams);
         expect.fail('Should have thrown an error for missing ports parameter');
       } catch (error) {
         expect((error as Error).message).toContain('Custom scan type requires ports parameter');

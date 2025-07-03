@@ -41,7 +41,7 @@ describe('AuthDialog', () => {
     );
   });
 
-  it('should prevent exiting when no auth method is selected and show error message', async () => {
+  it('should show auth dialog when no auth method is selected', async () => {
     const onSelect = vi.fn();
     const settings: LoadedSettings = new LoadedSettings(
       {
@@ -57,19 +57,16 @@ describe('AuthDialog', () => {
       [],
     );
 
-    const { lastFrame, stdin, unmount } = render(
+    const { lastFrame, unmount } = render(
       <AuthDialog onSelect={onSelect} settings={settings} />,
     );
     await wait();
 
-    // Simulate pressing escape key
-    stdin.write('\u001b'); // ESC key
-    await wait();
-
-    // Should show error message instead of calling onSelect
-    expect(lastFrame()).toContain(
-      'You must select an auth method to proceed. Press Ctrl+C twice to exit.',
-    );
+    // Should show the auth dialog with available options
+    expect(lastFrame()).toContain('Select Auth Method');
+    expect(lastFrame()).toContain('Anthropic Claude API');
+    expect(lastFrame()).toContain('OpenAI API');
+    expect(lastFrame()).toContain('Spyglass Agent');
     expect(onSelect).not.toHaveBeenCalled();
     unmount();
   });

@@ -11,6 +11,7 @@ import {
   getCurrentGeminiMdFilename,
   getAllGeminiMdFilenames,
   DEFAULT_CONTEXT_FILENAME,
+  MEMORY_SECTION_HEADER,
 } from './memoryTool.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -19,8 +20,6 @@ import * as os from 'os';
 // Mock dependencies
 vi.mock('fs/promises');
 vi.mock('os');
-
-const MEMORY_SECTION_HEADER = '## Gemini Added Memories';
 
 // Define a type for our fsAdapter to ensure consistency
 interface FsAdapter {

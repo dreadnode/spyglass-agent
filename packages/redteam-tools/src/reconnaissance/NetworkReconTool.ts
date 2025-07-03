@@ -398,7 +398,7 @@ export class NetworkReconTool extends RedTeamTool {
     return await this.runNmapScan(target, nmapParams);
   }
 
-  private generateFindings(results: NmapResult[]): SecurityFinding[] {
+  public generateFindings(results: NmapResult[]): SecurityFinding[] {
     const findings: SecurityFinding[] = [];
     const timestamp = new Date();
 
@@ -443,14 +443,14 @@ export class NetworkReconTool extends RedTeamTool {
     return findings;
   }
 
-  private isHighRiskService(service: string, port: number): boolean {
+  public isHighRiskService(service: string, port: number): boolean {
     const highRiskServices = ['ftp', 'telnet', 'rlogin', 'mysql', 'postgresql', 'mongodb', 'redis', 'elasticsearch'];
     const highRiskPorts = [21, 23, 513, 3306, 5432, 27017, 6379, 9200];
     
     return highRiskServices.includes(service.toLowerCase()) || highRiskPorts.includes(port);
   }
 
-  private isAdminService(service: string, port: number): boolean {
+  public isAdminService(service: string, port: number): boolean {
     const adminServices = ['ssh', 'rdp', 'vnc', 'snmp'];
     const adminPorts = [22, 3389, 5900, 161];
     

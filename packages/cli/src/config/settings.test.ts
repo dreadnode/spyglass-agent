@@ -16,6 +16,13 @@ vi.mock('os', async (importOriginal) => {
   };
 });
 
+// Mock './modelBackend.js' to disable auto-detection during tests
+vi.mock('./modelBackend.js', () => ({
+  getDefaultAuthTypeFromEnv: vi.fn(() => undefined),
+  getModelBackendDisplayName: vi.fn(() => 'Unknown'),
+  getModelBackendInstructions: vi.fn(() => 'Unknown backend'),
+}));
+
 // Mock './settings.js' to ensure it uses the mocked 'os.homedir()' for its internal constants.
 vi.mock('./settings.js', async (importActual) => {
   const originalModule = await importActual<typeof import('./settings.js')>();

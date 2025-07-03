@@ -26,10 +26,16 @@ export function AuthDialog({
   const [errorMessage, setErrorMessage] = useState<string | null>(
     initialErrorMessage || null,
   );
+  const [hasSelectedAuth, setHasSelectedAuth] = useState<boolean>(
+    settings.merged.selectedAuthType !== undefined,
+  );
   const items = [
+    { label: 'Anthropic Claude API', value: AuthType.USE_ANTHROPIC },
+    { label: 'OpenAI API', value: AuthType.USE_OPENAI },
     { label: 'Login with Google', value: AuthType.LOGIN_WITH_GOOGLE },
     { label: 'Gemini API Key (AI Studio)', value: AuthType.USE_GEMINI },
     { label: 'Vertex AI', value: AuthType.USE_VERTEX_AI },
+    { label: 'Ollama (Local)', value: AuthType.USE_OLLAMA },
   ];
 
   let initialAuthIndex = items.findIndex(
@@ -46,13 +52,14 @@ export function AuthDialog({
       setErrorMessage(error);
     } else {
       setErrorMessage(null);
+      setHasSelectedAuth(true);
       onSelect(authMethod, SettingScope.User);
     }
   };
 
   useInput((_input, key) => {
     if (key.escape) {
-      if (settings.merged.selectedAuthType === undefined) {
+      if (!hasSelectedAuth) {
         // Prevent exiting if no auth method is set
         setErrorMessage(
           'You must select an auth method to proceed. Press Ctrl+C twice to exit.',
@@ -87,12 +94,12 @@ export function AuthDialog({
         <Text color={Colors.Gray}>(Use Enter to select)</Text>
       </Box>
       <Box marginTop={1}>
-        <Text>Terms of Services and Privacy Notice for Gemini CLI</Text>
+        <Text>Terms of Services and Privacy Notice for Spyglass Agent</Text>
       </Box>
       <Box marginTop={1}>
         <Text color={Colors.AccentBlue}>
           {
-            'https://github.com/google-gemini/gemini-cli/blob/main/docs/tos-privacy.md'
+            'https://github.com/dreadnode/spyglass-agent/blob/main/docs/tos-privacy.md'
           }
         </Text>
       </Box>
