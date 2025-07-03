@@ -6,68 +6,25 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const mockExecAsync = vi.hoisted(() => vi.fn());
-
-vi.mock('child_process', () => ({
-  exec: vi.fn(),
-}));
-
-vi.mock('util', () => ({
-  promisify: vi.fn((fn) => {
-    if (fn.name === 'exec') return mockExecAsync;
-    return fn;
-  }),
-}));
-
-// Mock MemoryFindingStorage to prevent file system issues
-vi.mock('../services/findingStorage.js', () => ({
-  MemoryFindingStorage: {
-    getInstance: vi.fn(() => ({
-      storeFinding: vi.fn().mockResolvedValue(undefined)
-    }))
-  }
-}));
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { NetworkReconTool } from './network-recon.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-type NetworkReconParams = {
-  targets: string[];
-  scanType?: 'quick' | 'full' | 'custom';
-  ports?: string;
-  osDetection?: boolean;
-  serviceDetection?: boolean;
-  aggressiveTiming?: boolean;
-  preferredTool?: 'nmap' | 'rustscan' | 'auto';
-  maxRate?: number;
-};
-
-describe('NetworkReconTool', () => {
-  let tool: NetworkReconTool;
-
-  beforeEach(() => {
-    // Reset all mocks
-    mockExecAsync.mockReset();
-    tool = new NetworkReconTool('/test/target');
-  });
-
-  describe('constructor', () => {
-    it('should create tool with correct name and properties', () => {
-      expect(tool.name).toBe('network_recon');
-      expect(tool.displayName).toBe('Network Reconnaissance');
-      expect(tool.description).toContain('network reconnaissance');
-      expect(tool.description).toContain('nmap');
-    });
-  });
-
-  describe('execute', () => {
-    it('should successfully perform nmap scan', async () => {
-      // Mock 'which nmap' to return success
-      mockExecAsync
-        .mockResolvedValueOnce({ stdout: '/usr/bin/nmap', stderr: '' })
-        .mockResolvedValueOnce({
-          stdout: `
-<?xml version="1.0" encoding="UTF-8"?>
+// Mock child_process exec
+vi.mock('child_process', () => ({
+  exec: vi.fn((cmd, opts, callback) => {
+    // Handle both callback and options forms
+    const cb = typeof opts === 'function' ? opts : callback;
+    
+    // Mock responses based on command
+    if (cmd.includes('which nmap')) {
+      cb?.(null, { stdout: '/usr/bin/nmap', stderr: '' });
+    } else if (cmd.includes('which rustscan')) {
+      cb?.(new Error('rustscan not found'), { stdout: '', stderr: 'command not found' });
+    } else if (cmd.startsWith('nmap')) {
+      // Return mock nmap XML output
+      const xmlOutput = `<?xml version="1.0" encoding="UTF-8"?>
 <nmaprun>
   <host>
     <address addr="192.168.1.1"/>
@@ -82,11 +39,59 @@ describe('NetworkReconTool', () => {
       </port>
     </ports>
   </host>
-</nmaprun>
-          `,
-          stderr: ''
-        });
+</nmaprun>`;
+      cb?.(null, { stdout: xmlOutput, stderr: '' });
+    } else {
+      cb?.(new Error(`Unknown command: ${cmd}`), { stdout: '', stderr: '' });
+    }
+  })
+}));
 
+// Mock MemoryFindingStorage to prevent file system issues
+vi.mock('../services/findingStorage.js', () => ({
+  MemoryFindingStorage: {
+    getInstance: vi.fn(() => ({
+      storeFinding: vi.fn().mockResolvedValue(undefined)
+    }))
+  }
+}));
+
+type NetworkReconParams = {
+  targets: string[];
+  scanType?: 'quick' | 'full' | 'custom';
+  ports?: string;
+  osDetection?: boolean;
+  serviceDetection?: boolean;
+  aggressiveTiming?: boolean;
+  preferredTool?: 'nmap' | 'rustscan' | 'auto';
+  maxRate?: number;
+};
+
+describe('NetworkReconTool', () => {
+  let tool: NetworkReconTool;
+  let mockExec: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    tool = new NetworkReconTool('/test/target');
+    mockExec = vi.mocked(exec);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('constructor', () => {
+    it('should create tool with correct name and properties', () => {
+      expect(tool.name).toBe('network_recon');
+      expect(tool.displayName).toBe('Network Reconnaissance');
+      expect(tool.description).toContain('network reconnaissance');
+      expect(tool.description).toContain('nmap');
+    });
+  });
+
+  describe('execute', () => {
+    it('should successfully perform nmap scan', async () => {
       const params: NetworkReconParams = {
         targets: ['192.168.1.1'],
         scanType: 'quick',
@@ -96,10 +101,6 @@ describe('NetworkReconTool', () => {
       const result = await tool.execute(params, new AbortController().signal);
       const parsedResult = JSON.parse(result.llmContent as string);
 
-      if (!parsedResult.success) {
-        console.log('Error details:', JSON.stringify(parsedResult, null, 2));
-        console.log('Return display:', result.returnDisplay);
-      }
       expect(parsedResult.success).toBe(true);
       expect(parsedResult.tool).toBe('network_recon');
       expect(parsedResult.openPorts).toBe(2);
@@ -107,16 +108,24 @@ describe('NetworkReconTool', () => {
       expect(result.returnDisplay).toContain('192.168.1.1');
       expect(result.returnDisplay).toContain('ssh');
       expect(result.returnDisplay).toContain('http');
+      
+      // Verify exec was called (tool checks rustscan first, then nmap)
+      expect(mockExec).toHaveBeenCalledWith('which rustscan', expect.any(Function));
+      expect(mockExec).toHaveBeenCalledWith('which nmap', expect.any(Function));
+      expect(mockExec).toHaveBeenCalledWith(expect.stringContaining('nmap'), expect.any(Object), expect.any(Function));
     });
 
     it('should fall back to nmap when rustscan fails', async () => {
-      // Mock 'which rustscan' to fail, 'which nmap' to succeed
-      mockExecAsync
-        .mockRejectedValueOnce(new Error('rustscan not found'))
-        .mockResolvedValueOnce({ stdout: '/usr/bin/nmap', stderr: '' })
-        .mockResolvedValueOnce({
-          stdout: `
-<?xml version="1.0" encoding="UTF-8"?>
+      // Update mock to fail rustscan but succeed with nmap
+      mockExec.mockImplementation((cmd, opts, callback) => {
+        const cb = typeof opts === 'function' ? opts : callback;
+        
+        if (cmd.includes('which rustscan')) {
+          cb?.(new Error('rustscan not found'), { stdout: '', stderr: '' });
+        } else if (cmd.includes('which nmap')) {
+          cb?.(null, { stdout: '/usr/bin/nmap', stderr: '' });
+        } else if (cmd.startsWith('nmap')) {
+          const xmlOutput = `<?xml version="1.0" encoding="UTF-8"?>
 <nmaprun>
   <host>
     <address addr="10.0.0.1"/>
@@ -127,10 +136,12 @@ describe('NetworkReconTool', () => {
       </port>
     </ports>
   </host>
-</nmaprun>
-          `,
-          stderr: ''
-        });
+</nmaprun>`;
+          cb?.(null, { stdout: xmlOutput, stderr: '' });
+        } else {
+          cb?.(new Error(`Unknown command: ${cmd}`), { stdout: '', stderr: '' });
+        }
+      });
 
       const params: NetworkReconParams = {
         targets: ['10.0.0.1'],
@@ -146,11 +157,15 @@ describe('NetworkReconTool', () => {
     });
 
     it('should perform custom port scan', async () => {
-      mockExecAsync
-        .mockResolvedValueOnce({ stdout: '/usr/bin/nmap', stderr: '' })
-        .mockResolvedValueOnce({
-          stdout: `
-<?xml version="1.0" encoding="UTF-8"?>
+      mockExec.mockImplementation((cmd, opts, callback) => {
+        const cb = typeof opts === 'function' ? opts : callback;
+        
+        if (cmd.includes('which rustscan')) {
+          cb?.(new Error('rustscan not found'), { stdout: '', stderr: '' });
+        } else if (cmd.includes('which nmap')) {
+          cb?.(null, { stdout: '/usr/bin/nmap', stderr: '' });
+        } else if (cmd.startsWith('nmap')) {
+          const xmlOutput = `<?xml version="1.0" encoding="UTF-8"?>
 <nmaprun>
   <host>
     <address addr="192.168.1.30"/>
@@ -165,10 +180,12 @@ describe('NetworkReconTool', () => {
       </port>
     </ports>
   </host>
-</nmaprun>
-          `,
-          stderr: ''
-        });
+</nmaprun>`;
+          cb?.(null, { stdout: xmlOutput, stderr: '' });
+        } else {
+          cb?.(new Error(`Unknown command: ${cmd}`), { stdout: '', stderr: '' });
+        }
+      });
 
       const params: NetworkReconParams = {
         targets: ['192.168.1.30'],
@@ -185,11 +202,15 @@ describe('NetworkReconTool', () => {
     });
 
     it('should generate security findings for high-risk services', async () => {
-      mockExecAsync
-        .mockResolvedValueOnce({ stdout: '/usr/bin/nmap', stderr: '' })
-        .mockResolvedValueOnce({
-          stdout: `
-<?xml version="1.0" encoding="UTF-8"?>
+      mockExec.mockImplementation((cmd, opts, callback) => {
+        const cb = typeof opts === 'function' ? opts : callback;
+        
+        if (cmd.includes('which rustscan')) {
+          cb?.(new Error('rustscan not found'), { stdout: '', stderr: '' });
+        } else if (cmd.includes('which nmap')) {
+          cb?.(null, { stdout: '/usr/bin/nmap', stderr: '' });
+        } else if (cmd.startsWith('nmap')) {
+          const xmlOutput = `<?xml version="1.0" encoding="UTF-8"?>
 <nmaprun>
   <host>
     <address addr="192.168.1.40"/>
@@ -208,10 +229,12 @@ describe('NetworkReconTool', () => {
       </port>
     </ports>
   </host>
-</nmaprun>
-          `,
-          stderr: ''
-        });
+</nmaprun>`;
+          cb?.(null, { stdout: xmlOutput, stderr: '' });
+        } else {
+          cb?.(new Error(`Unknown command: ${cmd}`), { stdout: '', stderr: '' });
+        }
+      });
 
       const params: NetworkReconParams = {
         targets: ['192.168.1.40']
@@ -242,9 +265,13 @@ describe('NetworkReconTool', () => {
 
     it('should handle tool not available error', async () => {
       // Mock both tools as unavailable
-      mockExecAsync
-        .mockRejectedValueOnce(new Error('rustscan not found'))
-        .mockRejectedValueOnce(new Error('nmap not found'));
+      mockExec.mockImplementation((cmd, opts, callback) => {
+        const cb = typeof opts === 'function' ? opts : callback;
+        
+        if (cmd.includes('which')) {
+          cb?.(new Error('command not found'), { stdout: '', stderr: '' });
+        }
+      });
 
       const params: NetworkReconParams = {
         targets: ['192.168.1.1']
@@ -259,11 +286,22 @@ describe('NetworkReconTool', () => {
     });
 
     it('should apply scan options correctly', async () => {
-      mockExecAsync
-        .mockResolvedValueOnce({ stdout: '/usr/bin/nmap', stderr: '' })
-        .mockResolvedValueOnce({
-          stdout: `
-<?xml version="1.0" encoding="UTF-8"?>
+      mockExec.mockImplementation((cmd, opts, callback) => {
+        const cb = typeof opts === 'function' ? opts : callback;
+        
+        if (cmd.includes('which rustscan')) {
+          cb?.(new Error('rustscan not found'), { stdout: '', stderr: '' });
+        } else if (cmd.includes('which nmap')) {
+          cb?.(null, { stdout: '/usr/bin/nmap', stderr: '' });
+        } else if (cmd.startsWith('nmap')) {
+          // Verify the command has the expected arguments
+          expect(cmd).toContain('-p-'); // Full port scan
+          expect(cmd).toContain('-sV'); // Service detection
+          expect(cmd).toContain('-O'); // OS detection
+          expect(cmd).toContain('-T4'); // Aggressive timing
+          expect(cmd).toContain('--max-rate=1000'); // Rate limiting
+          
+          const xmlOutput = `<?xml version="1.0" encoding="UTF-8"?>
 <nmaprun>
   <host>
     <address addr="192.168.1.60"/>
@@ -274,10 +312,12 @@ describe('NetworkReconTool', () => {
       </port>
     </ports>
   </host>
-</nmaprun>
-          `,
-          stderr: ''
-        });
+</nmaprun>`;
+          cb?.(null, { stdout: xmlOutput, stderr: '' });
+        } else {
+          cb?.(new Error(`Unknown command: ${cmd}`), { stdout: '', stderr: '' });
+        }
+      });
 
       const params: NetworkReconParams = {
         targets: ['192.168.1.60'],
@@ -292,32 +332,30 @@ describe('NetworkReconTool', () => {
       const parsedResult = JSON.parse(result.llmContent as string);
 
       expect(parsedResult.success).toBe(true);
-      
-      // Verify nmap was called with correct arguments
-      const nmapCall = mockExecAsync.mock.calls[1][0];
-      expect(nmapCall).toContain('-p-'); // Full port scan
-      expect(nmapCall).toContain('-sV'); // Service detection
-      expect(nmapCall).toContain('-O'); // OS detection
-      expect(nmapCall).toContain('-T4'); // Aggressive timing
-      expect(nmapCall).toContain('--max-rate=1000'); // Rate limiting
     });
 
     it('should handle no open ports found', async () => {
-      mockExecAsync
-        .mockResolvedValueOnce({ stdout: '/usr/bin/nmap', stderr: '' })
-        .mockResolvedValueOnce({
-          stdout: `
-<?xml version="1.0" encoding="UTF-8"?>
+      mockExec.mockImplementation((cmd, opts, callback) => {
+        const cb = typeof opts === 'function' ? opts : callback;
+        
+        if (cmd.includes('which rustscan')) {
+          cb?.(new Error('rustscan not found'), { stdout: '', stderr: '' });
+        } else if (cmd.includes('which nmap')) {
+          cb?.(null, { stdout: '/usr/bin/nmap', stderr: '' });
+        } else if (cmd.startsWith('nmap')) {
+          const xmlOutput = `<?xml version="1.0" encoding="UTF-8"?>
 <nmaprun>
   <host>
     <address addr="192.168.1.50"/>
     <ports>
     </ports>
   </host>
-</nmaprun>
-          `,
-          stderr: ''
-        });
+</nmaprun>`;
+          cb?.(null, { stdout: xmlOutput, stderr: '' });
+        } else {
+          cb?.(new Error(`Unknown command: ${cmd}`), { stdout: '', stderr: '' });
+        }
+      });
 
       const params: NetworkReconParams = {
         targets: ['192.168.1.50']
@@ -343,12 +381,20 @@ describe('NetworkReconTool', () => {
     });
 
     it('should accept valid scan types', async () => {
-      mockExecAsync
-        .mockResolvedValueOnce({ stdout: '/usr/bin/nmap', stderr: '' })
-        .mockResolvedValueOnce({
-          stdout: `<?xml version="1.0"?><nmaprun><host><address addr="192.168.1.1"/></host></nmaprun>`,
-          stderr: ''
-        });
+      mockExec.mockImplementation((cmd, opts, callback) => {
+        const cb = typeof opts === 'function' ? opts : callback;
+        
+        if (cmd.includes('which rustscan')) {
+          cb?.(new Error('rustscan not found'), { stdout: '', stderr: '' });
+        } else if (cmd.includes('which nmap')) {
+          cb?.(null, { stdout: '/usr/bin/nmap', stderr: '' });
+        } else if (cmd.startsWith('nmap')) {
+          const xmlOutput = `<?xml version="1.0"?><nmaprun><host><address addr="192.168.1.1"/></host></nmaprun>`;
+          cb?.(null, { stdout: xmlOutput, stderr: '' });
+        } else {
+          cb?.(new Error(`Unknown command: ${cmd}`), { stdout: '', stderr: '' });
+        }
+      });
 
       const params: NetworkReconParams = {
         targets: ['192.168.1.1'],
@@ -370,4 +416,4 @@ describe('NetworkReconTool', () => {
       expect(description).toContain('service discovery');
     });
   });
-}); 
+});
