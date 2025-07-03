@@ -19,6 +19,15 @@ vi.mock('util', () => ({
   }),
 }));
 
+// Mock MemoryFindingStorage to prevent file system issues
+vi.mock('../services/findingStorage.js', () => ({
+  MemoryFindingStorage: {
+    getInstance: vi.fn(() => ({
+      storeFinding: vi.fn().mockResolvedValue(undefined)
+    }))
+  }
+}));
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NetworkReconTool } from './network-recon.js';
 
@@ -87,6 +96,10 @@ describe('NetworkReconTool', () => {
       const result = await tool.execute(params, new AbortController().signal);
       const parsedResult = JSON.parse(result.llmContent as string);
 
+      if (!parsedResult.success) {
+        console.log('Error details:', JSON.stringify(parsedResult, null, 2));
+        console.log('Return display:', result.returnDisplay);
+      }
       expect(parsedResult.success).toBe(true);
       expect(parsedResult.tool).toBe('network_recon');
       expect(parsedResult.openPorts).toBe(2);
