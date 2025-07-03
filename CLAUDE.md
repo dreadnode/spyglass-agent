@@ -33,12 +33,13 @@ This tool is designed exclusively for **defensive security purposes**, including
 - Binary command: `spyglass`
 
 ## Red Teaming Tool Integration
-The framework supports MCP (Model Context Protocol) servers for specialized red teaming tools:
-- Network scanning and enumeration
-- Vulnerability scanners
-- Exploit frameworks
-- Forensics and analysis tools
-- Report generation systems
+The framework includes built-in red teaming tools and supports MCP (Model Context Protocol) servers for additional specialized tools:
+- Network reconnaissance and port scanning (built-in)
+- External reconnaissance and OSINT gathering (built-in)
+- Security finding reporting (built-in)
+- MCP servers for additional vulnerability scanners
+- MCP servers for exploit frameworks
+- MCP servers for forensics and analysis tools
 
 ## Usage Guidelines
 1. Always ensure proper authorization before testing
