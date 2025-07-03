@@ -1,295 +1,191 @@
-# Spyglass Agent - Red Team CLI Tool
+# Spyglass Agent
 
-[![Spyglass Agent CI](https://github.com/dreadnode/spyglass-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/dreadnode/spyglass-agent/actions/workflows/ci.yml)
+[![CI](https://github.com/dreadnode/spyglass-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/dreadnode/spyglass-agent/actions/workflows/ci.yml)
 
 ![Spyglass Agent Screenshot](./docs/assets/spyglass-screenshot.png)
 
-This repository contains Spyglass Agent, a command-line AI workflow tool designed specifically for red teaming and offensive security operations. Built on a foundation adapted from Google's Gemini CLI, it provides intelligent assistance for security testing workflows.
+Spyglass Agent is a command-line AI tool for red teaming and security assessments. Built on Google's Gemini CLI foundation, it provides intelligent assistance for authorized security testing workflows.
 
-With Spyglass Agent you can:
+**Important**: Only use for authorized security testing and educational purposes.
 
-- Analyze large codebases for vulnerability discovery and security assessments.
-- Generate security reports and documentation from assessment findings.
-- Automate red teaming tasks, like reconnaissance, vulnerability scanning, and exploit research.
-- Use tools and MCP servers to connect specialized security capabilities and frameworks.
-- Conduct context-aware security analysis with multi-modal capabilities.
-- Integrate with existing security tools and workflows.
+## Quick Start
 
-**Important**: This tool should only be used for authorized security testing and educational purposes. Ensure you have proper authorization before conducting any security assessments.
-
-## Quickstart
-
-1. **Prerequisites:** Ensure you have [Node.js version 18](https://nodejs.org/en/download) or higher installed.
-2. **Run the CLI:** Execute the following command in your terminal:
-
-   ```bash
-   npx https://github.com/dreadnode/spyglass-agent
-   ```
-
-   Or install it with:
-
+1. **Prerequisites:** Node.js 18+ required
+2. **Install:**
    ```bash
    npm install -g @dreadnode/spyglass-agent
    spyglass
    ```
+3. **Setup:** Choose your AI backend and start testing
 
-3. **Pick a color theme**
-4. **Choose your AI backend:** Spyglass Agent supports multiple AI backends for maximum flexibility and security.
+## Backend Configuration
 
-You are now ready to use Spyglass Agent for your authorized security testing!
+Spyglass supports multiple AI backends. Configure using environment variables or the interactive setup.
 
-## AI Backend Configuration
-
-Spyglass Agent supports multiple AI backends to meet different security and operational requirements. You can switch backends using environment variables or by saving preferences in your settings file.
-
-### Quick Backend Selection
-
-**Environment Variables (Recommended)**
+### Anthropic Claude (Recommended)
 ```bash
-# Use environment variables for temporary backend selection
-export SPYGLASS_MODEL_BACKEND=anthropic  # or openai, gemini, ollama
-export SPYGLASS_MODEL=claude-3-5-sonnet-20241022  # Optional: specific model
-spyglass
-```
-
-**Settings File (Persistent)**
-```bash
-# Save backend preference permanently 
-spyglass --auth anthropic  # Interactive setup wizard
-```
-
-### Supported Backends
-
-#### 🤖 Anthropic Claude (Recommended)
-High-quality reasoning and code analysis capabilities:
-
-```bash
-# 1. Get API key from https://console.anthropic.com/account/keys
 export ANTHROPIC_API_KEY="sk-ant-..."
-
-# 2. Use with Spyglass
 export SPYGLASS_MODEL_BACKEND=anthropic
-export SPYGLASS_MODEL=claude-3-5-sonnet-20241022  # Optional
 spyglass
 ```
 
-**Available Models:**
-- `claude-3-5-sonnet-20241022` - Best balance (recommended)
-- `claude-3-5-haiku-20241022` - Fastest
-- `claude-3-opus-20240229` - Most capable
+Available models:
+- `claude-3-5-sonnet-20241022` (recommended)
+- `claude-3-5-haiku-20241022` (fastest)
+- `claude-opus-4-20250514` (latest)
 
-#### 🧠 OpenAI GPT (Popular)
-Industry-leading models with broad capabilities:
-
+### OpenAI GPT
 ```bash
-# 1. Get API key from https://platform.openai.com/api-keys
 export OPENAI_API_KEY="sk-..."
-
-# 2. Use with Spyglass
 export SPYGLASS_MODEL_BACKEND=openai
-export SPYGLASS_MODEL=gpt-4o  # Optional
 spyglass
 ```
 
-**Available Models:**
-- `gpt-4o` - Latest multimodal (recommended)
-- `gpt-4-turbo` - Fast and capable
-- `gpt-4` - Most capable
+Available models:
+- `gpt-4o` (recommended)
+- `gpt-4-turbo`
+- `gpt-4`
 
-#### 🔒 Ollama (Local/Air-Gapped)
-Local model execution for maximum privacy and OPSEC:
-
+### Local Models (Ollama)
 ```bash
-# 1. Install Ollama
+# Install Ollama
 curl -fsSL https://ollama.ai/install.sh | sh
 
-# 2. Start service
+# Pull models
+ollama pull llama3.1
 ollama serve
 
-# 3. Pull security-focused models
-ollama pull llama3.1        # General purpose (4.7GB)
-ollama pull codellama       # Code analysis (3.8GB)
-
-# 4. Use with Spyglass
+# Configure Spyglass
 export SPYGLASS_MODEL_BACKEND=ollama
-export SPYGLASS_MODEL=llama3.1  # Optional
 spyglass
 ```
 
-**Benefits:**
-- Air-gapped operation - No internet required
-- Complete data privacy - Nothing leaves your machine
-- No API costs - Unlimited usage
-- OPSEC friendly - No cloud provider logs
+Benefits: Air-gapped operation, complete privacy, no API costs
 
-#### 🔍 Google Gemini (Advanced)
-Google's latest models with strong reasoning:
-
+### Google Gemini
 ```bash
-# 1. Get API key from https://aistudio.google.com/app/apikey
 export GEMINI_API_KEY="..."
-
-# 2. Use with Spyglass
 export SPYGLASS_MODEL_BACKEND=gemini
 spyglass
 ```
 
-#### 🏢 Google Vertex AI (Enterprise)
-Enterprise Google Cloud integration:
-
+### Google Vertex AI (Enterprise)
 ```bash
-export GOOGLE_API_KEY="..."
 export GOOGLE_CLOUD_PROJECT="your-project"
-export GOOGLE_CLOUD_LOCATION="us-central1"
-export SPYGLASS_MODEL_BACKEND=vertex
+export SPYGLASS_MODEL_BACKEND=vertexai
+spyglass
 ```
 
-### Configuration Precedence
+### Configuration Priority
+1. **Environment variables** (highest)
+2. **Settings file** (`~/.spyglass/settings.json`)
+3. **Auto-detection** (fallback)
 
-Spyglass Agent uses this priority order for backend selection:
+## Built-in Security Tools
 
-1. **Environment Variables** (highest priority)
-   ```bash
-   export SPYGLASS_MODEL_BACKEND=anthropic  # Overrides everything
-   ```
-
-2. **Settings File** (persistent preferences)
-   ```bash
-   ~/.spyglass/settings.json  # Saved preferences
-   ```
-
-3. **Auto-Detection** (fallback)
-   - Detects available API keys automatically
-   - Priority: OpenAI → Anthropic → Gemini → Vertex AI → Ollama
-
-### Switching Backends
-
-**Temporary (session-only):**
+### Network Reconnaissance
 ```bash
-SPYGLASS_MODEL_BACKEND=anthropic spyglass  # Just this run
+spyglass "scan 192.168.1.0/24 for open ports"
+```
+- Port scanning with nmap/rustscan
+- Service fingerprinting
+- Automatic finding generation
+
+### External Reconnaissance
+```bash
+spyglass "perform OSINT on example.com"
+```
+- DNS enumeration
+- WHOIS analysis
+- Subdomain discovery
+
+### Security Reporting
+```bash
+spyglass "generate security report"
+```
+- Finding aggregation
+- Risk assessment
+- Professional reports
+
+## Example Usage
+
+Start from a target directory:
+```bash
+cd target-application/
+spyglass
 ```
 
-**Permanent (save preference):**
+Common tasks:
+- "Analyze this codebase for SQL injection vulnerabilities"
+- "Create a penetration testing report"
+- "Parse these Nmap results and identify attack vectors"
+- "Generate vulnerability disclosure documentation"
+
+## Tool Requirements
+
+Some features require external tools:
 ```bash
-echo '{"selectedAuthType": "anthropic"}' > ~/.spyglass/settings.json
+# Network scanning
+brew install nmap        # macOS
+apt-get install nmap     # Ubuntu
+
+# Fast scanning (optional)
+cargo install rustscan
+```
+
+## Configuration Examples
+
+**Temporary backend switch:**
+```bash
+SPYGLASS_MODEL_BACKEND=anthropic spyglass
+```
+
+**Permanent settings:**
+```json
+# ~/.spyglass/settings.json
+{
+  "selectedAuthType": "anthropic",
+  "defaultModel": "claude-3-5-sonnet-20241022"
+}
 ```
 
 **In-CLI commands:**
 ```bash
-/auth anthropic     # Switch and save preference
-/auth status        # Show current backend
+/auth anthropic     # Switch backend
+/theme atom-one-dark # Change theme
 ```
 
-3. Configure your usage tier based on your security testing requirements.
+## Troubleshooting
 
-For other authentication methods and security configurations, see the [authentication](./docs/cli/authentication.md) guide.
+**Backend issues:**
+1. Verify API key: `echo $ANTHROPIC_API_KEY`
+2. Test connection: `spyglass "what model are you?"`
+3. Check logs: `DEBUG=1 spyglass`
 
-## Examples
+**Migration from Gemini CLI:**
+Settings automatically migrate from `~/.gemini/` to `~/.spyglass/`
 
-Once the CLI is running, you can start conducting security analysis from your shell.
+## Development
 
-You can start a security assessment from a target directory:
-
-```sh
-cd target-application/
-spyglass
-> Analyze this codebase for common security vulnerabilities and provide a prioritized list
+```bash
+git clone https://github.com/dreadnode/spyglass-agent.git
+cd spyglass-agent
+npm install
+npm test    # 100% test coverage
+npm start
 ```
 
-Or work with an existing security project:
+## License
 
-```sh
-git clone https://github.com/target-org/webapp
-cd webapp
-spyglass
-> Generate a comprehensive security assessment report for this web application
-```
+Apache License 2.0 - see [LICENSE](LICENSE) file.
 
-### Next steps
+## Security Notice
 
-- Learn how to [contribute to or build from the source](./CONTRIBUTING.md).
-- Explore the available **[CLI Commands](./docs/cli/commands.md)**.
-- If you encounter any issues, review the **[Troubleshooting guide](./docs/troubleshooting.md)**.
-- For more comprehensive documentation, see the [full documentation](./docs/index.md).
-- Take a look at some [security-focused tasks](#security-focused-tasks) for more inspiration.
+- Only test systems you own or have authorization to test
+- Follow responsible disclosure practices
+- Use appropriate operational security measures
+- Review [Security Policy](SECURITY.md) for vulnerability reporting
 
-### Troubleshooting
+---
 
-Head over to the [troubleshooting](docs/troubleshooting.md) guide if you're
-having issues.
-
-## Security-focused tasks
-
-### Vulnerability discovery and analysis
-
-Start by `cd`ing into a target codebase and running `spyglass`.
-
-```text
-> Identify potential SQL injection vulnerabilities in this codebase and suggest remediation strategies.
-```
-
-```text
-> Analyze the authentication mechanisms for security weaknesses and privilege escalation paths.
-```
-
-### Security assessments and reporting
-
-```text
-> Create a comprehensive penetration testing report based on my findings in issues #45-67.
-```
-
-```text
-> Help me develop a security remediation plan for the vulnerabilities identified in this audit.
-```
-
-### Red team automation
-
-Use MCP servers to integrate specialized security tools with your assessment workflows.
-
-```text
-> Automate reconnaissance of this target domain and generate an attack surface analysis.
-```
-
-```text
-> Create a dashboard showing vulnerability trends across our recent assessments.
-```
-
-### Security tool integration
-
-```text
-> Parse these Nmap scan results and identify the most promising attack vectors.
-```
-
-```text
-> Analyze these log files for indicators of compromise and generate an incident timeline.
-```
-
-### Responsible disclosure and documentation
-
-```text
-> Generate a properly formatted vulnerability disclosure report for this critical finding.
-```
-
-```text
-> Create documentation for this security tool integration following responsible disclosure guidelines.
-```
-
-## Purpose & Scope
-
-This tool is designed exclusively for **defensive security purposes**, including:
-- Security assessment and penetration testing
-- Vulnerability research and analysis  
-- Red team exercises and training
-- Security tool automation and integration
-- Defensive posture evaluation
-
-**Always ensure proper authorization before testing and follow responsible disclosure practices.**
-
-### Uninstall
-
-Head over to the [Uninstall](docs/Uninstall.md) guide for uninstallation instructions.
-
-## Terms of Service and Privacy Notice
-
-For details on the terms of service and privacy notice applicable to your use of Spyglass Agent, see the [Terms of Service and Privacy Notice](./docs/tos-privacy.md).
-
+**Remember**: Use responsibly and within legal boundaries.

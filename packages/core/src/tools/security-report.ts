@@ -9,25 +9,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import process from 'node:process';
 import { MemoryFindingStorage } from '../services/findingStorage.js';
+import { FindingCorrelator, CorrelatedFinding } from '../services/findingCorrelation.js';
+import { CvssScorer } from '../services/cvssScoring.js';
+import { SecurityFinding } from '../types/security.js';
 
-// Standardized security finding structure used across all tools
-interface SecurityFinding {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  type: string;
-  target: string;
-  port?: number;
-  protocol?: string;
-  title: string;
-  description: string;
-  impact: string;
-  remediation: string;
-  evidence: string[];
-  references: string[];
-  discoveredAt: Date;
-  discoveredBy: string;
-  status: 'new' | 'confirmed' | 'false-positive' | 'remediated' | 'accepted-risk';
-}
+// Use SecurityFinding from types/security.js instead of local interface
 
 interface ReportMetadata {
   title: string;
@@ -54,6 +40,9 @@ interface SecurityReport {
     highFindings: number;
     riskRating: 'critical' | 'high' | 'medium' | 'low';
     keyRecommendations: string[];
+    averageCvssScore?: number;
+    highestCvssScore?: number;
+    riskDistribution?: Record<'critical' | 'high' | 'medium' | 'low' | 'info', number>;
   };
   sections: ReportSection[];
   findings: SecurityFinding[];
@@ -214,10 +203,10 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
       console.log(`[INFO] SecurityReport: Generating report "${params.title || 'Security Assessment Report'}"`);
       
       // Aggregate findings from various sources
-      const findings = await this.aggregateFindings(params);
+      const { findings, correlations, riskStats } = await this.aggregateFindings(params);
       
       // Generate report structure
-      const report = await this.generateReport(params, findings);
+      const report = await this.generateReport(params, findings, correlations, riskStats);
       
       // Export in requested formats
       const outputFiles = await this.exportReport(report, params);
@@ -234,6 +223,7 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
           formats: outputFiles.map(f => path.extname(f).slice(1)),
           totalFindings: findings.length,
           criticalFindings: findings.filter(f => f.severity === 'critical').length,
+          correlationGroups: correlations.length,
           executionTime,
           data: {
             params,
@@ -262,28 +252,63 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
     }
   }
 
-  private async aggregateFindings(params: SecurityReportParams): Promise<SecurityFinding[]> {
+  private async aggregateFindings(params: SecurityReportParams): Promise<{
+    findings: SecurityFinding[];
+    correlations: CorrelatedFinding[];
+    riskStats?: {
+      averageCvssScore: number;
+      highestCvssScore: number;
+      findingsWithoutCvss: number;
+      riskDistribution: Record<'critical' | 'high' | 'medium' | 'low' | 'info', number>;
+    };
+  }> {
     const findings: SecurityFinding[] = [];
     
     // Add custom findings if provided
     if (params.customFindings) {
-      findings.push(...params.customFindings.map(f => ({
-        ...f,
-        discoveredAt: new Date(),
-        discoveredBy: f.discoveredBy || 'manual-entry',
-        status: f.status || 'new' as const,
-        evidence: f.evidence || [],
-        references: f.references || []
-      })));
+      const customFindings = params.customFindings.map(f => {
+        const baseFinding = {
+          ...f,
+          discoveredAt: new Date(),
+          discoveredBy: f.discoveredBy || 'manual-entry',
+          status: f.status || 'new' as const,
+          evidence: f.evidence || [],
+          references: f.references || []
+        };
+        
+        // Auto-score custom findings if they don't have CVSS scores
+        return !f.cvssScore ? CvssScorer.scoreFinding(baseFinding) : baseFinding;
+      });
+      
+      findings.push(...customFindings);
     }
 
-    // TODO: Aggregate from memory tool
+    // Aggregate from memory tool with correlation
     if (params.aggregateFromMemory) {
-      const memoryFindings = await this.getMemoryFindings();
-      findings.push(...memoryFindings);
+      const storage = MemoryFindingStorage.getInstance(this.targetDir);
+      
+      // Ensure all findings have CVSS scores
+      await storage.recalculateCvssScores();
+      
+      const correlationResult = await storage.getCorrelatedFindings();
+      const riskStats = await storage.getRiskStatistics();
+      
+      findings.push(...correlationResult.uniqueFindings);
+      
+      console.log(`[DEBUG] SecurityReport: Retrieved ${correlationResult.uniqueFindings.length} unique findings and ${correlationResult.correlatedGroups.length} correlation groups`);
+      console.log(`[DEBUG] SecurityReport: Risk stats - Avg CVSS: ${riskStats.averageCvssScore}, Max CVSS: ${riskStats.highestCvssScore}`);
+      
+      return {
+        findings: correlationResult.uniqueFindings,
+        correlations: correlationResult.correlatedGroups,
+        riskStats
+      };
     }
 
-    return findings;
+    return {
+      findings,
+      correlations: []
+    };
   }
 
   private async getMemoryFindings(): Promise<SecurityFinding[]> {
@@ -301,7 +326,12 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
     }
   }
 
-  private async generateReport(params: SecurityReportParams, findings: SecurityFinding[]): Promise<SecurityReport> {
+  private async generateReport(params: SecurityReportParams, findings: SecurityFinding[], correlations: CorrelatedFinding[], riskStats?: {
+    averageCvssScore: number;
+    highestCvssScore: number;
+    findingsWithoutCvss: number;
+    riskDistribution: Record<'critical' | 'high' | 'medium' | 'low' | 'info', number>;
+  }): Promise<SecurityReport> {
     const now = new Date();
     const metadata: ReportMetadata = {
       title: params.title || 'Security Assessment Report',
@@ -314,10 +344,10 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
     };
 
     // Generate executive summary
-    const executiveSummary = this.generateExecutiveSummary(findings);
+    const executiveSummary = this.generateExecutiveSummary(findings, correlations, riskStats);
     
     // Organize findings into sections
-    const sections = this.generateReportSections(findings, params.assessmentType || 'full-assessment');
+    const sections = this.generateReportSections(findings, correlations, params.assessmentType || 'full-assessment');
 
     return {
       metadata,
@@ -331,7 +361,12 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
     };
   }
 
-  private generateExecutiveSummary(findings: SecurityFinding[]) {
+  private generateExecutiveSummary(findings: SecurityFinding[], correlations: CorrelatedFinding[], riskStats?: {
+    averageCvssScore: number;
+    highestCvssScore: number;
+    findingsWithoutCvss: number;
+    riskDistribution: Record<'critical' | 'high' | 'medium' | 'low' | 'info', number>;
+  }) {
     const totalFindings = findings.length;
     const criticalFindings = findings.filter(f => f.severity === 'critical').length;
     const highFindings = findings.filter(f => f.severity === 'high').length;
@@ -351,13 +386,25 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
 
     // Generate key recommendations
     const keyRecommendations = this.generateKeyRecommendations(findings);
+    
+    // Calculate correlation statistics
+    const attackChains = correlations.filter(c => c.type === 'chain').length;
+    const relatedGroups = correlations.filter(c => c.type === 'related').length;
 
     return {
       totalFindings,
       criticalFindings,
       highFindings,
       riskRating,
-      keyRecommendations
+      keyRecommendations,
+      averageCvssScore: riskStats?.averageCvssScore,
+      highestCvssScore: riskStats?.highestCvssScore,
+      riskDistribution: riskStats?.riskDistribution,
+      correlationStats: {
+        attackChains,
+        relatedGroups,
+        totalCorrelations: correlations.length
+      }
     };
   }
 
@@ -373,7 +420,7 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
     return Array.from(recommendations);
   }
 
-  private generateReportSections(findings: SecurityFinding[], assessmentType: string): ReportSection[] {
+  private generateReportSections(findings: SecurityFinding[], correlations: CorrelatedFinding[], assessmentType: string): ReportSection[] {
     const sections: ReportSection[] = [];
 
     // Group findings by severity
@@ -435,6 +482,14 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
       }
     }
 
+    // Finding Correlation Analysis section
+    if (correlations.length > 0) {
+      sections.push({
+        title: 'Finding Correlation Analysis',
+        content: this.generateCorrelationAnalysis(correlations)
+      });
+    }
+
     // Recommendations section
     sections.push({
       title: 'Remediation Recommendations',
@@ -442,6 +497,51 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
     });
 
     return sections;
+  }
+  
+  private generateCorrelationAnalysis(correlations: CorrelatedFinding[]): string {
+    let analysis = 'Analysis of relationships between security findings:\n\n';
+    
+    // Group correlations by type
+    const attackChains = correlations.filter(c => c.type === 'chain');
+    const relatedGroups = correlations.filter(c => c.type === 'related');
+    const duplicates = correlations.filter(c => c.type === 'duplicate');
+    
+    if (attackChains.length > 0) {
+      analysis += `**Attack Chains Identified (${attackChains.length}):**\n`;
+      attackChains.forEach((chain, index) => {
+        const riskScore = FindingCorrelator.calculateGroupRiskScore(chain);
+        analysis += `${index + 1}. ${chain.primary.title} → ${chain.related.map(r => r.title).join(' → ')}\n`;
+        analysis += `   Risk Score: ${riskScore.toFixed(1)}/10 | Confidence: ${(chain.confidence * 100).toFixed(0)}%\n`;
+        analysis += `   Impact: These findings can be chained together to escalate privileges or access\n\n`;
+      });
+    }
+    
+    if (relatedGroups.length > 0) {
+      analysis += `**Related Finding Groups (${relatedGroups.length}):**\n`;
+      relatedGroups.forEach((group, index) => {
+        const riskScore = FindingCorrelator.calculateGroupRiskScore(group);
+        analysis += `${index + 1}. ${group.primary.title} + ${group.related.length} related finding(s)\n`;
+        analysis += `   Risk Score: ${riskScore.toFixed(1)}/10 | Confidence: ${(group.confidence * 100).toFixed(0)}%\n`;
+        analysis += `   Impact: These findings affect the same system or component\n\n`;
+      });
+    }
+    
+    if (duplicates.length > 0) {
+      analysis += `**Duplicate Findings Merged (${duplicates.length}):**\n`;
+      analysis += `Identified and consolidated ${duplicates.length} duplicate findings to avoid over-reporting.\n\n`;
+    }
+    
+    analysis += '**Key Insights:**\n';
+    if (attackChains.length > 0) {
+      analysis += `• ${attackChains.length} attack chain(s) identified - prioritize remediation of chain components\n`;
+    }
+    if (relatedGroups.length > 0) {
+      analysis += `• ${relatedGroups.length} related finding group(s) - coordinate remediation efforts\n`;
+    }
+    analysis += `• Finding correlation reduced noise by merging ${duplicates.length} duplicates\n`;
+    
+    return analysis;
   }
 
   private generateRemediationGuidance(findings: SecurityFinding[]): string {
@@ -525,7 +625,13 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
     md += `**Findings Summary:**\n`;
     md += `- Total Findings: ${report.executiveSummary.totalFindings}\n`;
     md += `- Critical: ${report.executiveSummary.criticalFindings}\n`;
-    md += `- High: ${report.executiveSummary.highFindings}\n\n`;
+    md += `- High: ${report.executiveSummary.highFindings}\n`;
+    
+    if (report.executiveSummary.averageCvssScore !== undefined) {
+      md += `- Average CVSS Score: ${report.executiveSummary.averageCvssScore}\n`;
+      md += `- Highest CVSS Score: ${report.executiveSummary.highestCvssScore}\n`;
+    }
+    md += '\n';
     
     if (report.executiveSummary.keyRecommendations.length > 0) {
       md += `**Key Recommendations:**\n`;
@@ -545,7 +651,14 @@ export class SecurityReportTool extends BaseTool<SecurityReportParams, ToolResul
           md += `### ${index + 1}. ${finding.title}\n\n`;
           md += `**Severity:** ${finding.severity.toUpperCase()}\n`;
           md += `**Target:** ${finding.target}\n`;
-          md += `**Type:** ${finding.type}\n\n`;
+          md += `**Type:** ${finding.type}\n`;
+          if (finding.cvssScore !== undefined) {
+            md += `**CVSS Score:** ${finding.cvssScore}/10\n`;
+          }
+          if (finding.cvssVector) {
+            md += `**CVSS Vector:** ${finding.cvssVector}\n`;
+          }
+          md += '\n';
           md += `**Description:** ${finding.description}\n\n`;
           md += `**Impact:** ${finding.impact}\n\n`;
           md += `**Remediation:** ${finding.remediation}\n\n`;
